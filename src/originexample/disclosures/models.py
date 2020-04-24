@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from originexample.db import ModelBase
-from originexample.settings import API_ROOT_URL
 from originexample.tools import randomized_hash
 from originexample.facilities import FacilityFilters
 
