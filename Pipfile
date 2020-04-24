@@ -1,0 +1,36 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+pytest = "*"
+waitress = "*"
+gunicorn = "*"
+gevent = "*"
+flask = "*"
+flask-cors = "*"
+Werkzeug = "*"
+SQLAlchemy = "*"
+psycopg2 = "*"
+alembic = "*"
+marshmallow = "*"
+marshmallow_dataclass = "*"
+marshmallow_enum = "*"
+requests = "*"
+celery = "*"
+redis = "*"
+authlib = "*"
+
+[requires]
+python_version = "3.7"
+
+[scripts]
+migrate = "cd migrations && alembic upgrade head && cd .."
+revision = "cd migrations && alembic revision --autogenerate && cd .."
+develop = "python serve.py --port 8081"
+production = "gunicorn -b 0.0.0.0:8081 originexample:app --workers 1 --worker-class gevent --worker-connections 10"
+worker = "celery worker -A originexample.pipelines -B -l info --concurrency=10"
+beat = "celery beat -A originexample.pipelines -l info"
