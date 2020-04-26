@@ -35,6 +35,8 @@ class GgoDistributionBundle:
     stored: GgoDistribution = field(default_factory=GgoDistribution)
     retired: GgoDistribution = field(default_factory=GgoDistribution)
     expired: GgoDistribution = field(default_factory=GgoDistribution)
+    inbound: GgoDistribution = field(default_factory=GgoDistribution)
+    outbound: GgoDistribution = field(default_factory=GgoDistribution)
 
 
 # -- GetGgoDistributions request and response --------------------------------

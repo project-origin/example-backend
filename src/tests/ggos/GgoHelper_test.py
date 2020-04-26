@@ -36,7 +36,7 @@ def assert_summary(helper, facility, period, technology,
     :param int retired:
     :param int expired:
     """
-    summary = helper.get_ggo_distributions(facility, period, technology)
+    summary = helper.get_ggo_summary(facility, period, technology)
     assert summary.issued == issued
     assert summary.inbound == inbound
     assert summary.outbound == outbound

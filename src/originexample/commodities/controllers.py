@@ -1,10 +1,12 @@
+from functools import partial
+
 import marshmallow_dataclass as md
 
 from originexample.http import Controller
 from originexample.db import inject_session
 from originexample.facilities import FacilityQuery
 from originexample.common import DataSet, DateTimeRange
-from originexample.auth import User, requires_login, inject_user
+from originexample.auth import User, requires_login
 from originexample.services import SummaryResolution
 
 from originexample.services.datahub import (
@@ -20,7 +22,7 @@ from originexample.services.account import (
     SummaryGrouping,
     summarize_technologies,
     GetGgoSummaryRequest,
-)
+    GetTransferSummaryRequest, TransferFilters, TransferDirection)
 
 from .models import (
     MeasurementType,
@@ -62,11 +64,15 @@ class GetGgoDistributions(Controller):
         #     date_to=request.date.end,
         # )
 
+        begin_range = DateTimeRange.from_date_range(request.date_range)
+
         bundle = GgoDistributionBundle(
-            issued=self.get_issued(request, user.access_token),
-            stored=self.get_stored(request, user.access_token),
-            retired=self.get_retired(request, user.access_token),
-            expired=self.get_expired(request, user.access_token),
+            issued=self.get_issued(user.access_token, begin_range),
+            stored=self.get_stored(user.access_token, begin_range),
+            retired=self.get_retired(user.access_token, begin_range),
+            expired=self.get_expired(user.access_token, begin_range),
+            inbound=self.get_inbound(user.access_token, begin_range),
+            outbound=self.get_outbound(user.access_token, begin_range),
         )
 
         return GetGgoDistributionsResponse(
@@ -90,63 +96,96 @@ class GetGgoDistributions(Controller):
     #
     #     return query.get_distinct_gsrn()
 
-    def get_issued(self, request, token):
+    def get_issued(self, token, begin_range):
         """
-        :param GetGgoDistributionsRequest request:
         :param str token:
+        :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_ggo_distributions(request, token, GgoCategory.ISSUED)
-
-    def get_stored(self, request, token):
-        """
-        :param GetGgoDistributionsRequest request:
-        :param str token:
-        :rtype: GgoDistribution
-        """
-        return self.get_ggo_distributions(request, token, GgoCategory.STORED)
-
-    def get_retired(self, request, token):
-        """
-        :param GetGgoDistributionsRequest request:
-        :param str token:
-        :rtype: GgoDistribution
-        """
-        return self.get_ggo_distributions(request, token, GgoCategory.RETIRED)
-
-    def get_expired(self, request, token):
-        """
-        :param GetGgoDistributionsRequest request:
-        :param str token:
-        :rtype: GgoDistribution
-        """
-        return self.get_ggo_distributions(request, token, GgoCategory.EXPIRED)
-
-    def get_ggo_distributions(self, request, token, category):
-        """
-        :param GetGgoDistributionsRequest request:
-        :param str token:
-        :param GgoCategory category:
-        :rtype: GgoDistribution
-        """
-        grouping = [
-            SummaryGrouping.TECHNOLOGY_CODE,
-            SummaryGrouping.FUEL_CODE,
-        ]
-
-        begin_range = DateTimeRange.from_date_range(request.date_range)
-
-        response = self.service.get_ggo_summary(token, GetGgoSummaryRequest(
-            category=category,
-            resolution=SummaryResolution.ALL,
-            grouping=grouping,
-            fill=False,
-            filters=GgoFilters(begin_range=begin_range),
+        return self.get_and_summarize_distributions(partial(
+            self.get_ggo_summary,
+            token,
+            begin_range,
+            GgoCategory.ISSUED,
         ))
 
-        distribution = GgoDistribution()
+    def get_stored(self, token, begin_range):
+        """
+        :param str token:
+        :param DateTimeRange begin_range:
+        :rtype: GgoDistribution
+        """
+        return self.get_and_summarize_distributions(partial(
+            self.get_ggo_summary,
+            token,
+            begin_range,
+            GgoCategory.STORED,
+        ))
 
-        summarized = summarize_technologies(response.groups, grouping)
+    def get_retired(self, token, begin_range):
+        """
+        :param str token:
+        :param DateTimeRange begin_range:
+        :rtype: GgoDistribution
+        """
+        return self.get_and_summarize_distributions(partial(
+            self.get_ggo_summary,
+            token,
+            begin_range,
+            GgoCategory.RETIRED,
+        ))
+
+    def get_expired(self, token, begin_range):
+        """
+        :param str token:
+        :param DateTimeRange begin_range:
+        :rtype: GgoDistribution
+        """
+        return self.get_and_summarize_distributions(partial(
+            self.get_ggo_summary,
+            token,
+            begin_range,
+            GgoCategory.EXPIRED,
+        ))
+
+    def get_inbound(self, token, begin_range):
+        """
+        :param str token:
+        :param DateTimeRange begin_range:
+        :rtype: GgoDistribution
+        """
+        return self.get_and_summarize_distributions(partial(
+            self.get_transfer_summary,
+            token,
+            begin_range,
+            TransferDirection.INBOUND,
+        ))
+
+    def get_outbound(self, token, begin_range):
+        """
+        :param str token:
+        :param DateTimeRange begin_range:
+        :rtype: GgoDistribution
+        """
+        return self.get_and_summarize_distributions(partial(
+            self.get_transfer_summary,
+            token,
+            begin_range,
+            TransferDirection.OUTBOUND,
+        ))
+
+    def get_and_summarize_distributions(self, get_summary_groups):
+        """
+        :param function get_summary_groups: A function which returns a
+            list of SummaryGroup objects
+        :rtype: GgoDistribution
+        """
+        summarized = summarize_technologies(get_summary_groups(), [
+            SummaryGrouping.TECHNOLOGY_CODE,
+            SummaryGrouping.FUEL_CODE,
+        ])
+
+        distribution = GgoDistribution()
 
         for technology, summary_group in summarized:
             distribution.technologies.append(GgoTechnology(
@@ -155,6 +194,62 @@ class GetGgoDistributions(Controller):
             ))
 
         return distribution
+
+    def get_ggo_summary(self, token, begin_range, category):
+        """
+        Get either Issued, Stored, Retired and Expired from GgoSummary.
+
+        :param str token:
+        :param DateTimeRange begin_range:
+        :param GgoCategory category:
+        :rtype: List[SummaryGroup]
+        """
+        response = self.service.get_ggo_summary(token, GetGgoSummaryRequest(
+            category=category,
+            resolution=SummaryResolution.ALL,
+            fill=False,
+            filters=GgoFilters(begin_range=begin_range),
+            grouping=[
+                SummaryGrouping.TECHNOLOGY_CODE,
+                SummaryGrouping.FUEL_CODE,
+            ],
+        ))
+
+        return response.groups
+
+        # distribution = GgoDistribution()
+        #
+        # summarized = summarize_technologies(response.groups, grouping)
+        #
+        # for technology, summary_group in summarized:
+        #     distribution.technologies.append(GgoTechnology(
+        #         technology=technology,
+        #         amount=sum(summary_group.values),
+        #     ))
+        #
+        # return distribution
+
+    def get_transfer_summary(self, token, begin_range, direction):
+        """
+        Get either Inbound and Outbound from TransferSummary.
+
+        :param str token:
+        :param DateTimeRange begin_range:
+        :param TransferDirection direction:
+        :rtype: List[SummaryGroup]
+        """
+        response = self.service.get_transfer_summary(token, GetTransferSummaryRequest(
+            direction=direction,
+            resolution=SummaryResolution.ALL,
+            fill=False,
+            filters=TransferFilters(begin_range=begin_range),
+            grouping=[
+                SummaryGrouping.TECHNOLOGY_CODE,
+                SummaryGrouping.FUEL_CODE,
+            ],
+        ))
+
+        return response.groups
 
 
 class GetMeasurements(Controller):

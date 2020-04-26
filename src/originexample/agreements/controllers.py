@@ -1,15 +1,22 @@
 from functools import partial
 import marshmallow_dataclass as md
 
-from originexample.auth import User, UserQuery, requires_login, inject_token
+from originexample.auth import User, UserQuery, requires_login
 from originexample.db import inject_session, atomic
 from originexample.http import Controller
 from originexample.facilities import Facility, FacilityQuery
-from originexample.services.account import SummaryResolution, SummaryGrouping, AccountService, \
-    GetTransferSummaryRequest, TransferFilters, summarize_technologies, TransferDirection
+from originexample.common import DateTimeRange, DataSet
+from originexample.services.account import (
+    AccountService,
+    SummaryResolution,
+    SummaryGrouping,
+    TransferFilters,
+    TransferDirection,
+    GetTransferSummaryRequest,
+    summarize_technologies,
+)
 
 from .queries import AgreementQuery
-from .helpers import TransferSummaryCollector
 from .models import (
     TradeAgreement,
     MappedTradeAgreement,
@@ -25,8 +32,9 @@ from .models import (
     CountPendingProposalsResponse,
     WithdrawProposalRequest,
     WithdrawProposalResponse,
-    GetAgreementDetailsRequest, GetAgreementDetailsResponse)
-from ..common import DateTimeRange, DataSet
+    GetAgreementDetailsRequest,
+    GetAgreementDetailsResponse,
+)
 
 
 class AbstractAgreementController(Controller):

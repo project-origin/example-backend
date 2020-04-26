@@ -33,7 +33,7 @@ def assert_summary(helper, facility, period, technology,
     :param int retired:
     :param int expired:
     """
-    summary = helper.get_ggo_distributions(facility, period, technology)
+    summary = helper.get_ggo_summary(facility, period, technology)
 
     if summary is None:
         # Summary does not exist = The same as all values == 0
