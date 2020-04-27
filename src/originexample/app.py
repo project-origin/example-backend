@@ -11,12 +11,6 @@ from .settings import DEBUG, CORS_ORIGINS
 from .models import VERSIONED_DB_MODELS
 
 
-# -- Logging -----------------------------------------------------------------
-
-if DEBUG:
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
-
 # -- Flask setup -------------------------------------------------------------
 
 app = Flask(__name__)
@@ -29,3 +23,10 @@ cors = CORS(app, resources={r'*': {'origins': CORS_ORIGINS}})
 
 for url, controller in urls:
     app.add_url_rule(url, url, controller, methods=[controller.METHOD])
+
+
+# -- Logging -----------------------------------------------------------------
+
+if DEBUG:
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    app.logger.setLevel(logging.DEBUG)
