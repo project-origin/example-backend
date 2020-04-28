@@ -5,7 +5,7 @@ from originexample.settings import (
     PROJECT_URL,
     ACCOUNT_SERVICE_URL,
     TOKEN_HEADER,
-)
+    DEBUG)
 
 from .models import (
     # GetGgoListRequest,
@@ -44,6 +44,7 @@ class AccountService(object):
             url='%s%s' % (ACCOUNT_SERVICE_URL, path),
             json=body,
             headers={TOKEN_HEADER: f'Bearer {token}'},
+            verify=not DEBUG,
         )
 
         if response.status_code != 200:
