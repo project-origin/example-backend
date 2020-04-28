@@ -4,10 +4,10 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-
-[packages]
 pytest = "*"
 waitress = "*"
+
+[packages]
 gunicorn = "*"
 gevent = "*"
 flask = "*"
@@ -23,6 +23,7 @@ requests = "*"
 celery = "*"
 redis = "*"
 authlib = "*"
+setproctitle = "*"
 
 [requires]
 python_version = "3.7"
@@ -30,7 +31,7 @@ python_version = "3.7"
 [scripts]
 migrate = "alembic upgrade head"
 revision = "alembic revision --autogenerate"
-develop = "python serve.py --port 8081"
-production = "gunicorn -b 0.0.0.0:8081 originexample:app --workers 1 --worker-class gevent --worker-connections 10"
+develop = "python -m waitress --port=8081 originexample:app"
+production = "gunicorn -b 0.0.0.0:8081 originexample:app --workers 3 --worker-class gevent --worker-connections 10 --name ExampleBackend --access-logfile /dev/stdout --error-logfile /dev/stderr"
 worker = "celery worker -A originexample.pipelines -B -l info --concurrency=10"
 beat = "celery beat -A originexample.pipelines -l info"
