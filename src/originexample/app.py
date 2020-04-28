@@ -15,6 +15,7 @@ from .models import VERSIONED_DB_MODELS
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
+app.config['PROPAGATE_EXCEPTIONS'] = True
 
 cors = CORS(app, resources={r'*': {'origins': CORS_ORIGINS}})
 
