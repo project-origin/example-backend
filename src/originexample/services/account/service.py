@@ -67,9 +67,9 @@ class AccountService(object):
                 'verify_ssl': verify_ssl,
                 'request_body': str(body),
                 'response_code': response.status_code,
-                'response_content': response.content,
+                'response_content': str(response.content),
             })
-            raise Exception('Request to DataHub failed')
+            raise Exception('Request to AccountService failed: %s' % str(response.content))
 
         response_json = response.json()
 

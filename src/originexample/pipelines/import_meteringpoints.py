@@ -1,8 +1,7 @@
 """
 TODO write this
 """
-import logging
-
+from originexample import logger
 from originexample.db import atomic
 from originexample.tasks import celery_app
 from originexample.auth import UserQuery
@@ -18,24 +17,29 @@ from originexample.facilities import (
 service = DataHubService()
 
 
-def start_import_meteringpoints(user_id):
+def start_import_meteringpoints(user):
     """
-    :param int user_id:
+    :param User user:
     """
-    fetch_meteringpoints_and_insert_to_db.s(user_id).apply_async()
+    import_meteringpoints_and_insert_to_db \
+        .s(subject=user.sub) \
+        .apply_async()
 
 
-@celery_app.task(name='import_meteringpoints.fetch_meteringpoints_and_insert_to_db')
+@celery_app.task(name='import_meteringpoints.import_meteringpoints_and_insert_to_db')
+@logger.wrap_task(
+    title='Importing meteringpoints from DataHub',
+    pipeline='import_meteringpoints',
+    task='import_meteringpoints_and_insert_to_db',
+)
 @atomic
-def fetch_meteringpoints_and_insert_to_db(user_id, session):
+def import_meteringpoints_and_insert_to_db(subject, session):
     """
-    :param int user_id:
+    :param str subject:
     :param Session session:
     """
-    logging.info('--- fetch_meteringpoints_and_insert_to_db, user_id=%d' % user_id)
-
     user = UserQuery(session) \
-        .has_id(user_id) \
+        .has_sub(subject) \
         .one()
 
     response = service.get_meteringpoints(user.access_token)
@@ -76,3 +80,17 @@ def fetch_meteringpoints_and_insert_to_db(user_id, session):
                 postcode=meteringpoint.postcode,
                 municipality_code=meteringpoint.municipality_code,
             ))
+
+            logger.info(f'Imported meteringpoint with GSRN: {meteringpoint.gsrn}', extra={
+                'gsrn': meteringpoint.gsrn,
+                'subject': user.sub,
+                'pipeline': 'import_meteringpoints',
+                'task': 'import_meteringpoints_and_insert_to_db',
+            })
+        else:
+            logger.info(f'Skipping meteringpoint with GSRN: {meteringpoint.gsrn} (already exists in DB)', extra={
+                'gsrn': meteringpoint.gsrn,
+                'subject': user.sub,
+                'pipeline': 'import_meteringpoints',
+                'task': 'import_meteringpoints_and_insert_to_db',
+            })

@@ -1,10 +1,10 @@
 """
 TODO write this
 """
-import logging
 import marshmallow_dataclass as md
 from itertools import takewhile
 
+from originexample import logger
 from originexample.db import inject_session
 from originexample.tasks import celery_app, lock
 from originexample.auth import User, UserQuery
@@ -24,30 +24,32 @@ def start_handle_ggo_received_pipeline(ggo, user):
     :param User user:
     """
     handle_ggo_received \
-        .s(ggo_schema.dump(ggo), user.id) \
+        .s(subject=user.sub, ggo_json=ggo_schema.dump(ggo)) \
         .apply_async()
 
 
 @celery_app.task(bind=True, name='handle_ggo_received')
+@logger.wrap_task(
+    pipeline='import_meteringpoints',
+    task='import_meteringpoints_and_insert_to_db',
+)
 @inject_session
-def handle_ggo_received(task, ggo_json, user_id, session):
+def handle_ggo_received(task, subject, ggo_json, session):
     """
     TODO UNIQUE PER (ACCOUNT, BEGIN)
 
     :param celery.Task task:
+    :param str subject:
     :param JSON ggo_json:
-    :param int user_id:
     :param Session session:
     """
-    # logging.info('--- handle_ggo_received, ggo.address = %s' % ggo_json['address'])
-
     ggo = ggo_schema.load(ggo_json)
 
     receiving_user = UserQuery(session) \
-        .has_id(user_id) \
+        .has_sub(subject) \
         .one()
 
-    lock_key = '%s-%s' % (receiving_user.sub, ggo.begin)
+    lock_key = '%s-%s' % (subject, ggo.begin)
 
     # This lock is in place to avoid timing issues when executing multiple
     # tasks for the same account at the same Ggo.begin, which can cause
@@ -66,14 +68,13 @@ def handle_ggo_received(task, ggo_json, user_id, session):
             assigned_amount = min(remaining_amount, desired_amount)
             remaining_amount -= assigned_amount
 
-            logging.error(f'------------ consumer={consumer}, desired_amount={desired_amount}, assigned_amount={assigned_amount}, remaining_amount={remaining_amount}')
-
             if assigned_amount:
-                logging.error('------------ Consume %d' % assigned_amount)
                 consumer.consume(request, ggo, assigned_amount)
 
         if remaining_amount < ggo.amount:
-            logging.error('------------ receiving_user.id = %d, receiving_user.access_token=%s' % (
-                receiving_user.id, receiving_user.access_token
-            ))
+            logger.info('Composing a new GGO split', extra={
+                'subject': subject,
+                'address': ggo.address,
+                'begin': str(ggo.begin),
+            })
             service.compose(receiving_user.access_token, request)
