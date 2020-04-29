@@ -1,26 +1,16 @@
-import requests
 import marshmallow_dataclass as md
 from datetime import datetime, timezone
 from urllib.parse import urlparse
-from authlib.common.errors import AuthlibBaseError
-from authlib.integrations.requests_client import OAuth2Session
-from authlib.jose import jwt
 
+from originexample import logger
 from originexample.db import atomic, inject_session
 from originexample.http import Controller, redirect, BadRequest
 from originexample.services.datahub import DataHubService
 from originexample.services.account import AccountService
 from originexample.cache import redis
 from originexample.settings import (
-    DEBUG,
     FRONTEND_URL,
-    LOGIN_CALLBACK_URL,
     ACCOUNT_SERVICE_LOGIN_URL,
-    HYDRA_AUTH_ENDPOINT,
-    HYDRA_TOKEN_ENDPOINT,
-    HYDRA_CLIENT_ID,
-    HYDRA_CLIENT_SECRET,
-    HYDRA_WANTED_SCOPES,
 )
 
 from .queries import UserQuery
@@ -90,7 +80,11 @@ class LoginCallback(Controller):
         try:
             token = backend.fetch_token(request.code, request.state)
         except:
-            raise
+            logger.exception(f'Failed to fetch token', extra={
+                'scope': str(request.scope),
+                'code': request.code,
+                'state': request.state,
+            })
             return self.redirect_to_failure(return_url)
 
         # Extract data from token
@@ -110,10 +104,16 @@ class LoginCallback(Controller):
             .one_or_none()
 
         if user is None:
+            logger.error(f'Creating new user and subscribing to webhooks', extra={
+                'subject': id_token['sub'],
+            })
             self.create_new_user(token, id_token, expires, session)
             self.datahub.webhook_on_meteringpoints_available_subscribe(token['access_token'])
             self.account.webhook_on_ggo_received_subscribe(token['access_token'])
         else:
+            logger.error(f'Updating tokens for existing user', extra={
+                'subject': id_token['sub'],
+            })
             self.update_user_attributes(user, token, expires)
 
         # Save session in Redis

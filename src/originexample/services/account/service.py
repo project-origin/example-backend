@@ -1,15 +1,15 @@
 import requests
 import marshmallow_dataclass as md
 
+from originexample import logger
 from originexample.settings import (
     PROJECT_URL,
     ACCOUNT_SERVICE_URL,
     TOKEN_HEADER,
-    DEBUG)
+    DEBUG,
+)
 
 from .models import (
-    # GetGgoListRequest,
-    # GetGgoListResponse,
     GetGgoSummaryRequest,
     GetGgoSummaryResponse,
     ComposeGgoRequest,
@@ -38,17 +38,38 @@ class AccountService(object):
         :param Schema response_schema:
         :rtype obj:
         """
-        body = request_schema().dump(request)
+        url = '%s%s' % (ACCOUNT_SERVICE_URL, path)
+        verify_ssl = not DEBUG
 
-        response = requests.post(
-            url='%s%s' % (ACCOUNT_SERVICE_URL, path),
-            json=body,
-            headers={TOKEN_HEADER: f'Bearer {token}'},
-            verify=not DEBUG,
-        )
+        if request and request_schema:
+            body = request_schema().dump(request)
+        else:
+            body = None
+
+        try:
+            response = requests.post(
+                url=url,
+                json=body,
+                headers={TOKEN_HEADER: f'Bearer {token}'},
+                verify=verify_ssl,
+            )
+        except:
+            logger.exception(f'Invoking AccountService resulted in an exception', extra={
+                'url': url,
+                'verify_ssl': verify_ssl,
+                'request_body': str(body),
+            })
+            raise
 
         if response.status_code != 200:
-            raise Exception('%s\n\n%s\n\n%s\n\n%s\n\n' % (str(response), path, body, response.content))
+            logger.error(f'Invoking AccountService resulted in a status != 200', extra={
+                'url': url,
+                'verify_ssl': verify_ssl,
+                'request_body': str(body),
+                'response_code': response.status_code,
+                'response_content': response.content,
+            })
+            raise Exception('Request to DataHub failed')
 
         response_json = response.json()
 

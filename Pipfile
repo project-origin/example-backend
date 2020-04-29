@@ -24,6 +24,7 @@ celery = "*"
 redis = "*"
 authlib = "*"
 setproctitle = "*"
+opencensus-ext-azure = "*"
 
 [requires]
 python_version = "3.7"

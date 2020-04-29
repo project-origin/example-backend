@@ -1,5 +1,5 @@
-from redis import Redis
 from celery import Celery
+from celery.exceptions import Retry
 from contextlib import contextmanager
 
 from originexample.settings import REDIS_BROKER_URL, REDIS_BACKEND_URL
