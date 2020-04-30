@@ -1,6 +1,7 @@
 from functools import partial
 import marshmallow_dataclass as md
 
+from originexample import logger
 from originexample.auth import User, UserQuery, requires_login
 from originexample.db import inject_session, atomic
 from originexample.http import Controller
@@ -316,13 +317,22 @@ class SubmitAgreementProposal(Controller):
         else:
             raise RuntimeError('This should NOT have happened!')
 
-        session.add(self.create_pending_agreement(
+        agreement = self.create_pending_agreement(
             request=request,
             user=user,
             user_from=user_from,
             user_to=user_to,
             facilities=facilities,
-        ))
+        )
+
+        session.add(agreement)
+        session.flush()
+
+        logger.info(f'User submitted TradeAgreement proposal', extra={
+            'subject': user.sub,
+            'target': counterpart.sub,
+            'agreement_id': agreement.id,
+        })
 
         return SubmitAgreementProposalResponse(success=True)
 
@@ -391,8 +401,16 @@ class RespondToProposal(Controller):
 
         if request.accept:
             self.accept_proposal(request, agreement, user, session)
+            logger.info(f'User accepted to TradeAgreement proposal', extra={
+                'subject': user.sub,
+                'agreement_id': agreement.id,
+            })
         else:
             self.decline_proposal(agreement)
+            logger.info(f'User declined to TradeAgreement proposal', extra={
+                'subject': user.sub,
+                'agreement_id': agreement.id,
+            })
 
         return RespondToProposalResponse(success=True)
 

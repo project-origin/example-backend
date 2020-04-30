@@ -7,7 +7,7 @@ DEBUG = os.environ.get('DEBUG') in ('1', 't', 'true', 'yes')
 
 # -- Project -----------------------------------------------------------------
 
-PROJECT_NAME = 'Project Origin Example Application'
+PROJECT_NAME = 'Example Backend'
 SECRET = os.environ['SECRET']
 PROJECT_URL = os.environ['PROJECT_URL']
 HTTPS_PROJECT_URL = PROJECT_URL.replace('http:', 'https:')
@@ -89,3 +89,8 @@ REDIS_URL = 'redis://%s:%s@%s:%d' % (
 
 REDIS_BROKER_URL = '%s/%d' % (REDIS_URL, REDIS_BROKER_DB)
 REDIS_BACKEND_URL = '%s/%d' % (REDIS_URL, REDIS_BACKEND_DB)
+
+
+# -- Misc --------------------------------------------------------------------
+
+AZURE_APP_INSIGHTS_CONN_STRING = os.environ.get('AZURE_APP_INSIGHTS_CONN_STRING')

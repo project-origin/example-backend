@@ -171,7 +171,7 @@ class OnMeteringPointsAvailableWebhook(Controller):
             .one_or_none()
 
         if user:
-            start_import_meteringpoints(user.id)
+            start_import_meteringpoints(user)
             return True
         else:
             return False

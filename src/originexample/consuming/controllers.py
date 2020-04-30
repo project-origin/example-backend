@@ -1,5 +1,6 @@
 import marshmallow_dataclass as md
 
+from originexample import logger
 from originexample.db import inject_session
 from originexample.http import Controller
 from originexample.auth import UserQuery

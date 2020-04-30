@@ -1,10 +1,10 @@
 """
 TODO write this
 """
-import logging
 from datetime import datetime, timezone
 from celery import group
 
+from originexample import logger
 from originexample.db import inject_session, atomic
 from originexample.auth import UserQuery, AuthBackend
 from originexample.tasks import celery_app
@@ -17,13 +17,16 @@ backend = AuthBackend()
     name='refresh_token.get_soon_to_expire_tokens',
     max_retries=None,
 )
+@logger.wrap_task(
+    title='Getting soon-to-expire tokens',
+    pipeline='refresh_token',
+    task='get_soon_to_expire_tokens',
+)
 @inject_session
 def get_soon_to_expire_tokens(session):
     """
     :param Session session:
     """
-    logging.info('--- get_soon_to_expire_tokens')
-
     users = UserQuery(session) \
         .should_refresh_token()
 
@@ -36,14 +39,17 @@ def get_soon_to_expire_tokens(session):
     name='refresh_token.refresh_token_for_user',
     max_retries=None,
 )
+@logger.wrap_task(
+    title='Refreshing user\'s refresh_token',
+    pipeline='refresh_token',
+    task='refresh_token',
+)
 @atomic
 def refresh_token(user_id, session):
     """
     :param int user_id:
     :param Session session:
     """
-    logging.info(f'--- refresh_token_for_user, user_id={user_id}')
-
     user = UserQuery(session) \
         .has_id(user_id) \
         .one()
