@@ -12,6 +12,8 @@ from originexample.settings import (
 from .models import (
     GetMeasurementRequest,
     GetMeasurementResponse,
+    GetBeginRangeRequest,
+    GetBeginRangeResponse,
     GetMeasurementSummaryRequest,
     GetMeasurementSummaryResponse,
     GetMeteringPointsResponse,
@@ -97,20 +99,6 @@ class DataHubService(object):
             response_schema=md.class_schema(GetMeteringPointsResponse),
         )
 
-    def get_measurement_summary(self, token, request):
-        """
-        :param str token:
-        :param GetMeasurementSummaryRequest request:
-        :rtype: GetMeasurementSummaryResponse
-        """
-        return self.invoke(
-            token=token,
-            path='/measurements/summary',
-            request=request,
-            request_schema=md.class_schema(GetMeasurementSummaryRequest),
-            response_schema=md.class_schema(GetMeasurementSummaryResponse),
-        )
-
     def get_production(self, token, request):
         """
         :param str token:
@@ -137,6 +125,34 @@ class DataHubService(object):
             request=request,
             request_schema=md.class_schema(GetMeasurementRequest),
             response_schema=md.class_schema(GetMeasurementResponse),
+        )
+
+    def get_measurement_begin_range(self, token, request):
+        """
+        :param str token:
+        :param GetBeginRangeRequest request:
+        :rtype: GetBeginRangeResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/measurements/begin-range',
+            request=request,
+            request_schema=md.class_schema(GetBeginRangeRequest),
+            response_schema=md.class_schema(GetBeginRangeResponse),
+        )
+
+    def get_measurement_summary(self, token, request):
+        """
+        :param str token:
+        :param GetMeasurementSummaryRequest request:
+        :rtype: GetMeasurementSummaryResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/measurements/summary',
+            request=request,
+            request_schema=md.class_schema(GetMeasurementSummaryRequest),
+            response_schema=md.class_schema(GetMeasurementSummaryResponse),
         )
 
     def webhook_on_meteringpoints_available_subscribe(self, token):

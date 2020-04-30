@@ -48,7 +48,7 @@ class MeasurementFilters:
     TODO
     """
     begin: datetime = field(default=None)
-    begin_range: DateTimeRange = field(default_factory=None, metadata=dict(data_key='beginRange'))
+    begin_range: DateTimeRange = field(default=None, metadata=dict(data_key='beginRange'))
     sector: List[str] = field(default_factory=list)
     gsrn: List[str] = field(default_factory=list)
     type: MeasurementType = field(default=None, metadata=dict(by_value=True))
@@ -84,6 +84,21 @@ class GetMeasurementListResponse:
     success: bool
     total: int
     measurements: List[Measurement] = field(default_factory=list)
+
+
+# -- GetBeginRange request and response --------------------------------------
+
+
+@dataclass
+class GetBeginRangeRequest:
+    filters: MeasurementFilters = field(default=None)
+
+
+@dataclass
+class GetBeginRangeResponse:
+    success: bool
+    first: datetime
+    last: datetime
 
 
 # -- GetGgoSummary request and response --------------------------------------
