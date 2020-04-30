@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from functools import partial
 import marshmallow_dataclass as md
 
@@ -36,6 +37,7 @@ from .models import (
     GetAgreementDetailsRequest,
     GetAgreementDetailsResponse,
 )
+from ..pipelines import start_consume_back_in_time_pipeline
 
 
 class AbstractAgreementController(Controller):
@@ -405,6 +407,12 @@ class RespondToProposal(Controller):
                 'subject': user.sub,
                 'agreement_id': agreement.id,
             })
+
+            start_consume_back_in_time_pipeline(
+                user=agreement.user_from,
+                begin_from=datetime.fromordinal(agreement.date_from.toordinal()),
+                begin_to=datetime.fromordinal(agreement.date_to.toordinal()) + timedelta(days=1),
+            )
         else:
             self.decline_proposal(agreement)
             logger.info(f'User declined to TradeAgreement proposal', extra={

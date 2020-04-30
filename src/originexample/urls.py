@@ -19,6 +19,7 @@ urls = (
     ('/facilities/edit', facilities.EditFacilityDetails()),
     ('/facilities/get-filtering-options', facilities.GetFilteringOptions()),
     ('/facilities/set-retiring-priority', facilities.SetRetiringPriority()),
+    ('/facilities/retire-back-in-time', facilities.RetireBackInTime()),
 
     # Agreements
     ('/agreements', agreements.GetAgreementList()),

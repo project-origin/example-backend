@@ -63,7 +63,6 @@ def handle_ggo_received(task, subject, ggo_json, session):
         remaining_amount = ggo.amount
 
         for consumer in takewhile(lambda _: remaining_amount > 0, consumers):
-
             desired_amount = consumer.get_desired_amount(ggo)
             assigned_amount = min(remaining_amount, desired_amount)
             remaining_amount -= assigned_amount
