@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-backend-deployment
+  namespace: project-origin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-backend-deployment
+  template:
+    metadata:
+      labels:
+        app: example-backend-deployment
+    spec:
+      containers:
+        - name: example-backend-container
+          image: projectorigin/example_backend:2134
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: namespace-config
+            - configMapRef:
+                name: example-backend-config
+            - secretRef:
+                name: example-backend-system-secret
+            - secretRef:
+                name: example-backend-hydra-secret
+            - secretRef:
+                name: example-backend-db-secret
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-backend-beat-deployment
+  namespace: project-origin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-backend-beat-deployment
+  template:
+    metadata:
+      labels:
+        app: example-backend-beat-deployment
+    spec:
+      containers:
+        - name: example-backend-beat-container
+          image: projectorigin/example_backend:2134
+          args: ["pipenv", "run", "beat"]
+          envFrom:
+            - configMapRef:
+                name: namespace-config
+            - configMapRef:
+                name: example-backend-config
+            - secretRef:
+                name: example-backend-system-secret
+            - secretRef:
+                name: example-backend-hydra-secret
+            - secretRef:
+                name: example-backend-db-secret
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-backend-worker-deployment
+  namespace: project-origin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-backend-worker-deployment
+  template:
+    metadata:
+      labels:
+        app: example-backend-worker-deployment
+    spec:
+      containers:
+        - name: example-backend-worker-container
+          image: projectorigin/example_backend:2134
+          args: ["pipenv", "run", "worker"]
+
+          envFrom:
+            - configMapRef:
+                name: namespace-config
+            - configMapRef:
+                name: example-backend-config
+            - secretRef:
+                name: example-backend-system-secret
+            - secretRef:
+                name: example-backend-hydra-secret
+            - secretRef:
+                name: example-backend-db-secret
