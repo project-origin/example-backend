@@ -62,6 +62,21 @@ class LoginRequest:
     return_url: str = field(metadata=dict(data_key='returnUrl'))
 
 
+
+
+# -- Error request and response --------------------------------------------
+
+
+@dataclass
+class ErrorRequest:
+    class Meta:
+        unknown = EXCLUDE
+
+    error: str = field(default=None)
+    error_description: str = field(default=None)
+    error_hint: str = field(default=None)
+
+
 # -- VerifyLoginCallback request and response --------------------------------
 
 

@@ -19,6 +19,7 @@ from .decorators import requires_login
 from .models import (
     User,
     LoginRequest,
+    ErrorRequest,
     AutocompleteUsersRequest,
     AutocompleteUsersResponse,
     VerifyLoginCallbackRequest,
@@ -158,6 +159,46 @@ class LoginCallback(Controller):
         :rtype: flask.Response
         """
         return redirect(f'{return_url}?success=0', code=303)
+
+class Logout(Controller):
+    """
+    TODO
+    """
+    METHOD = 'GET'
+
+    def handle_request(self):
+        """
+        :rtype: flask.Response
+        """
+        
+        logout_url = backend.get_logout_url()
+
+        return redirect(logout_url, code=303)
+
+
+class Error(Controller):
+    """
+    TODO
+    """
+    METHOD = 'GET'
+    Request = md.class_schema(ErrorRequest)
+
+    @inject_user
+    def handle_request(self, request, user):
+        """
+        :param ErrorRequest request:
+        :param User user:
+        :rtype: flask.Response
+        """
+        
+        logger.error("An error occurred on Hydra.", {
+            'error': request.error,
+            'error_description': request.error_description,
+            'error_hint': request.error_hint,
+            'subject': user.sub
+        })
+
+        return redirect(FRONTEND_URL, code=303)
 
 
 class GetOnboardingUrl(Controller):
