@@ -9,7 +9,7 @@ from originexample import logger
 from originexample.db import inject_session
 from originexample.tasks import celery_app
 from originexample.auth import User, UserQuery
-from originexample.consuming import GgoConsumerProvider
+from originexample.consuming import GgoConsumerController
 from originexample.services.account import (
     AccountService,
     Ggo,
@@ -22,7 +22,7 @@ from originexample.services.account import (
 from .handle_ggo_received import handle_ggo_received
 
 
-provider = GgoConsumerProvider()
+provider = GgoConsumerController()
 service = AccountService()
 
 ggo_schema = md.class_schema(Ggo)()

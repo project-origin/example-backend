@@ -1,1 +1,1 @@
-from .consumers import GgoConsumerProvider
+from .consumers import GgoConsumerController
