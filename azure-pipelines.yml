@@ -5,7 +5,7 @@ resources:
 - repo: self
 
 variables:
-  imageName: 'projectorigin/example_backend'
+  imageName: 'projectorigin/example-backend'
   tag: '$(Build.BuildId)'
   vmImageName: 'ubuntu-latest'
 
