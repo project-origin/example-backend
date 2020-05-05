@@ -2,18 +2,16 @@
 TODO write this
 """
 import marshmallow_dataclass as md
-from itertools import takewhile
 
 from originexample import logger
 from originexample.db import inject_session
 from originexample.tasks import celery_app, lock
 from originexample.auth import User, UserQuery
-from originexample.consuming import GgoConsumerProvider
-from originexample.services.account import AccountService, Ggo, ComposeGgoRequest
+from originexample.consuming import GgoConsumerController
+from originexample.services.account import Ggo
 
 
-provider = GgoConsumerProvider()
-service = AccountService()
+controller = GgoConsumerController()
 
 ggo_schema = md.class_schema(Ggo)()
 
@@ -30,8 +28,9 @@ def start_handle_ggo_received_pipeline(ggo, user):
 
 @celery_app.task(bind=True, name='handle_ggo_received')
 @logger.wrap_task(
-    pipeline='import_meteringpoints',
-    task='import_meteringpoints_and_insert_to_db',
+    title='Handling GGO received',
+    pipeline='handle_ggo_received',
+    task='handle_ggo_received',
 )
 @inject_session
 def handle_ggo_received(task, subject, ggo_json, session):
@@ -45,7 +44,7 @@ def handle_ggo_received(task, subject, ggo_json, session):
     """
     ggo = ggo_schema.load(ggo_json)
 
-    receiving_user = UserQuery(session) \
+    user = UserQuery(session) \
         .has_sub(subject) \
         .one()
 
@@ -58,22 +57,24 @@ def handle_ggo_received(task, subject, ggo_json, session):
         if not acquired:
             raise task.retry()
 
-        request = ComposeGgoRequest(address=ggo.address)
-        consumers = list(provider.get_consumers(receiving_user, ggo, session))
-        remaining_amount = ggo.amount
+        controller.consume_ggo(user, ggo, session)
 
-        for consumer in takewhile(lambda _: remaining_amount > 0, consumers):
-            desired_amount = consumer.get_desired_amount(ggo)
-            assigned_amount = min(remaining_amount, desired_amount)
-            remaining_amount -= assigned_amount
-
-            if assigned_amount:
-                consumer.consume(request, ggo, assigned_amount)
-
-        if remaining_amount < ggo.amount:
-            logger.info('Composing a new GGO split', extra={
-                'subject': subject,
-                'address': ggo.address,
-                'begin': str(ggo.begin),
-            })
-            service.compose(receiving_user.access_token, request)
+        # request = ComposeGgoRequest(address=ggo.address)
+        # consumers = list(provider.get_consumers(receiving_user, ggo, session))
+        # remaining_amount = ggo.amount
+        #
+        # for consumer in takewhile(lambda _: remaining_amount > 0, consumers):
+        #     desired_amount = consumer.get_desired_amount(ggo)
+        #     assigned_amount = min(remaining_amount, desired_amount)
+        #     remaining_amount -= assigned_amount
+        #
+        #     if assigned_amount:
+        #         consumer.consume(request, ggo, assigned_amount)
+        #
+        # if remaining_amount < ggo.amount:
+        #     logger.info('Composing a new GGO split', extra={
+        #         'subject': subject,
+        #         'address': ggo.address,
+        #         'begin': str(ggo.begin),
+        #     })
+        #     service.compose(receiving_user.access_token, request)
