@@ -15,7 +15,7 @@ from originexample.settings import (
 
 from .queries import UserQuery
 from .backend import AuthBackend
-from .decorators import requires_login
+from .decorators import requires_login, inject_user
 from .models import (
     User,
     LoginRequest,
@@ -172,6 +172,8 @@ class Logout(Controller):
         """
         
         logout_url = backend.get_logout_url()
+
+        response.set_cookie('SID', id_token['sid'], domain=urlparse(FRONTEND_URL).netloc)
 
         return redirect(logout_url, code=303)
 
