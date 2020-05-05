@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: example-backend-deployment
-  namespace: project-origin
 spec:
   replicas: 1
   selector:
@@ -15,7 +14,7 @@ spec:
     spec:
       containers:
         - name: example-backend-container
-          image: projectorigin/example_backend:2134
+          image: projectorigin/example-backend:{{ .Values.tag }}
           ports:
             - containerPort: 8081
           envFrom:
@@ -35,7 +34,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: example-backend-beat-deployment
-  namespace: project-origin
 spec:
   replicas: 1
   selector:
@@ -48,7 +46,7 @@ spec:
     spec:
       containers:
         - name: example-backend-beat-container
-          image: projectorigin/example_backend:2134
+          image: projectorigin/example-backend:{{ .Values.tag }}
           args: ["pipenv", "run", "beat"]
           envFrom:
             - configMapRef:
@@ -67,7 +65,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: example-backend-worker-deployment
-  namespace: project-origin
 spec:
   replicas: 1
   selector:
@@ -80,7 +77,7 @@ spec:
     spec:
       containers:
         - name: example-backend-worker-container
-          image: projectorigin/example_backend:2134
+          image: projectorigin/example-backend:{{ .Values.tag }}
           args: ["pipenv", "run", "worker"]
 
           envFrom:
