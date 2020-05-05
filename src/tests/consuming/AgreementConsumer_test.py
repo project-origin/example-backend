@@ -15,6 +15,7 @@ from originexample.consuming.consumers import AgreementConsumer
     (100,        200,              100,                100),
     (100,        200,              150,                50),
     (100,        200,              200,                0),
+    (0,          200,              100,                0),
 ))
 def test__AgreementConsumer__get_desired_amount__should_return_correct_amount(
         account, ggo_amount, agreement_amount, transferred_amount, expected_amount):

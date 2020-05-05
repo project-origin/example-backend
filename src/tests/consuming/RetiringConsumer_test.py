@@ -17,6 +17,7 @@ from originexample.consuming.consumers import RetiringConsumer
     (100,        200,             100,            100),
     (100,        200,             150,            50),
     (100,        200,             200,            0),
+    (0,          200,             100,            0),
 ))
 def test__RetiringConsumer__get_desired_amount__should_return_correct_amount(
         datahub, account, ggo_amount, measured_amount, retired_amount, expected_amount):

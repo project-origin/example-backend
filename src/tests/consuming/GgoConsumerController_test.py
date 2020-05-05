@@ -46,11 +46,7 @@ def test__GgoConsumerController__consume_more_than_available__should_only_consum
     )
 
     # Act
-    uut.consume_ggo(
-        ggo=ggo,
-        user=Mock(),
-        session=Mock(),
-    )
+    uut.consume_ggo(ggo=ggo, user=Mock(), session=Mock())
 
     # Assert on consumers.consume()
     consumer1.consume.assert_called_once_with(ANY, ggo, 50)
