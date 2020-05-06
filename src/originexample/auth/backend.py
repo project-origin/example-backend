@@ -7,6 +7,7 @@ from originexample.settings import (
     LOGIN_CALLBACK_URL,
     HYDRA_AUTH_ENDPOINT,
     HYDRA_TOKEN_ENDPOINT,
+    HYDRA_LOGOUT_ENDPOINT,
     HYDRA_WELLKNOWN_ENDPOINT,
     HYDRA_CLIENT_ID,
     HYDRA_CLIENT_SECRET,
@@ -83,3 +84,12 @@ class AuthBackend(object):
         """
         jwks_response = requests.get(url=HYDRA_WELLKNOWN_ENDPOINT, verify=not DEBUG)
         return jwks_response.content.decode()
+
+    def get_logout_url(self):
+        """
+        Returns the url do redirect the user to, to complete the logout.
+
+        :rtype: str
+        """
+
+        return HYDRA_LOGOUT_ENDPOINT

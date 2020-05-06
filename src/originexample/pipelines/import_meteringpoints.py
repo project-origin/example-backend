@@ -46,7 +46,6 @@ def import_meteringpoints_and_insert_to_db(subject, session):
 
     for meteringpoint in response.meteringpoints:
         count = FacilityQuery(session) \
-            .belongs_to(user) \
             .has_gsrn(meteringpoint.gsrn) \
             .count()
 

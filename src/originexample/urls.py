@@ -10,6 +10,8 @@ urls = (
     # Auth / Users
     ('/auth/login', auth.Login()),
     ('/auth/login/callback', auth.LoginCallback()),
+    ('/auth/logout', auth.Logout()),
+    ('/auth/error', auth.Error()),
     ('/auth/get-onboarding-url', auth.GetOnboardingUrl()),
     ('/users/profile', auth.GetProfile()),
     ('/users/autocomplete', auth.AutocompleteUsers()),
@@ -19,6 +21,7 @@ urls = (
     ('/facilities/edit', facilities.EditFacilityDetails()),
     ('/facilities/get-filtering-options', facilities.GetFilteringOptions()),
     ('/facilities/set-retiring-priority', facilities.SetRetiringPriority()),
+    ('/facilities/retire-back-in-time', facilities.RetireBackInTime()),
 
     # Agreements
     ('/agreements', agreements.GetAgreementList()),

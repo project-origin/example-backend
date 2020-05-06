@@ -10,6 +10,8 @@ from originexample.settings import (
 )
 
 from .models import (
+    GetGgoListRequest,
+    GetGgoListResponse,
     GetGgoSummaryRequest,
     GetGgoSummaryResponse,
     ComposeGgoRequest,
@@ -75,19 +77,19 @@ class AccountService(object):
 
         return response_schema().load(response_json)
 
-    # def get_ggo_list(self, token, request):
-    #     """
-    #     :param str token:
-    #     :param GetGgoListRequest request:
-    #     :rtype: GetGgoListResponse
-    #     """
-    #     return self.invoke(
-    #         token=token,
-    #         path='/ggo',
-    #         request=request,
-    #         request_schema=md.class_schema(GetGgoListRequest),
-    #         response_schema=md.class_schema(GetGgoListResponse),
-    #     )
+    def get_ggo_list(self, token, request):
+        """
+        :param str token:
+        :param GetGgoListRequest request:
+        :rtype: GetGgoListResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/ggo',
+            request=request,
+            request_schema=md.class_schema(GetGgoListRequest),
+            response_schema=md.class_schema(GetGgoListResponse),
+        )
 
     def get_ggo_summary(self, token, request):
         """

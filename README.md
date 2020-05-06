@@ -37,20 +37,11 @@ Name | Description | Example
 `AZURE_APP_INSIGHTS_CONN_STRING` | Azure Application Insight connection string (optional) | `InstrumentationKey=19440978-19a8-4d07-9a99-b7a31d99f313`
 
 
-# Building container images
+# Building container image
 
 Web API:
 
-    sudo docker build -f Dockerfile.web -t example-backend-web:v1 .
-
-Worker:
-
-    sudo docker build -f Dockerfile.worker -t example-backend-worker:v1 .
-
-Worker Beat:
-
-    sudo docker build -f Dockerfile.beat -t example-backend-beat:v1 .
-
+    sudo docker build -f Dockerfile -t example-backend:v1 .
 
 ---
 ---

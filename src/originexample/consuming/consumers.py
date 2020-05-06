@@ -1,6 +1,10 @@
+from itertools import takewhile
+
+from originexample import logger
+from originexample.auth import User
 from originexample.agreements import TradeAgreement, AgreementQuery
 from originexample.facilities import Facility, FacilityQuery
-from originexample.services.datahub import DataHubService, MeasurementType, GetMeasurementRequest
+from originexample.services.datahub import DataHubService, GetMeasurementRequest
 from originexample.services.account import (
     AccountService,
     TransferFilters,
@@ -11,6 +15,7 @@ from originexample.services.account import (
     ComposeGgoRequest,
     GetTransferredAmountRequest,
     GetRetiredAmountRequest,
+    Ggo,
 )
 
 
@@ -18,7 +23,7 @@ account = AccountService()
 datahub = DataHubService()
 
 
-class GgoConsumerProvider(object):
+class GgoConsumerController(object):
     """
     TODO
     """
@@ -57,6 +62,33 @@ class GgoConsumerProvider(object):
         :rtype: GgoConsumer
         """
         return AgreementConsumer(agreement)
+
+    def consume_ggo(self, user, ggo, session):
+        """
+        :param User user:
+        :param Ggo ggo:
+        :param Session session:
+        """
+        request = ComposeGgoRequest(address=ggo.address)
+        consumers = list(self.get_consumers(user, ggo, session))
+        remaining_amount = ggo.amount
+
+        for consumer in takewhile(lambda _: remaining_amount > 0, consumers):
+            desired_amount = consumer.get_desired_amount(ggo)
+            assigned_amount = min(remaining_amount, desired_amount)
+            remaining_amount -= assigned_amount
+
+            if assigned_amount:
+                consumer.consume(request, ggo, assigned_amount)
+
+        if remaining_amount < ggo.amount:
+            logger.info('Composing a new GGO split', extra={
+                'subject': user.sub,
+                'address': ggo.address,
+                'begin': str(ggo.begin),
+            })
+
+            account.compose(user.access_token, request)
 
 
 class GgoConsumer(object):
@@ -100,8 +132,9 @@ class RetiringConsumer(GgoConsumer):
         measurement = self.get_measurement(self.gsrn, ggo.begin)
         if measurement:
             retired_amount = self.get_retired_amount(measurement)
-            remaining_amount = max(0, measurement.amount - retired_amount)
-            return min(remaining_amount, ggo.amount)
+            remaining_amount = measurement.amount - retired_amount
+            desired_amount = min(remaining_amount, ggo.amount)
+            return max(0, desired_amount)
         else:
             return 0
 
@@ -111,10 +144,6 @@ class RetiringConsumer(GgoConsumer):
         :param Ggo ggo:
         :param int amount:
         """
-        # import logging
-        # logging.info('XXXX consume, self.gsrn = %s, amount = %d' % (
-        #     self.gsrn, amount,
-        # ))
         request.retires.append(RetireRequest(
             amount=amount,
             gsrn=self.gsrn,
@@ -166,8 +195,9 @@ class AgreementConsumer(GgoConsumer):
         :param Ggo ggo:
         :rtype: int
         """
-        already_transferred = self.get_transferred_amount(ggo.begin)
-        return self.amount - already_transferred
+        transferred_amount = self.get_transferred_amount(ggo.begin)
+        desired_amount = min(self.amount - transferred_amount, ggo.amount)
+        return max(0, desired_amount)
 
     def consume(self, request, ggo, amount):
         """

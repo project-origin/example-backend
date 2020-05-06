@@ -3,7 +3,15 @@ import marshmallow_dataclass as md
 from originexample.http import Controller
 from originexample.auth import User, requires_login, UserQuery
 from originexample.db import inject_session, atomic
-from originexample.pipelines import start_import_meteringpoints
+from originexample.pipelines import (
+    start_import_meteringpoints,
+    start_consume_back_in_time_pipeline,
+)
+from originexample.services.datahub import (
+    DataHubService,
+    GetBeginRangeRequest,
+    MeasurementFilters,
+)
 
 from .queries import FacilityQuery
 from .models import (
@@ -151,6 +159,45 @@ class SetRetiringPriority(Controller):
                 .update({Facility.retiring_priority: i})
 
         return GetFilteringOptionsResponse(success=True)
+
+
+class RetireBackInTime(Controller):
+    """
+    Starts a pipeline to retire GGOs back in time.
+    """
+    datahub = DataHubService()
+
+    @requires_login
+    @inject_session
+    def handle_request(self, user, session):
+        """
+        :param User user:
+        :param Session session:
+        :rtype: bool
+        """
+        gsrn = FacilityQuery(session) \
+            .belongs_to(user) \
+            .is_consumer() \
+            .get_distinct_gsrn()
+
+        if gsrn:
+            # Get first and last "begin" for all measurements of all
+            # facilities which are retiring GGOs
+            response = self.datahub.get_measurement_begin_range(
+                token=user.access_token,
+                request=GetBeginRangeRequest(
+                    filters=MeasurementFilters(gsrn=gsrn),
+                )
+            )
+
+            if response.first and response.last:
+                start_consume_back_in_time_pipeline(
+                    user=user,
+                    begin_from=response.first,
+                    begin_to=response.last,
+                )
+
+        return True
 
 
 class OnMeteringPointsAvailableWebhook(Controller):

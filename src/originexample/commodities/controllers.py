@@ -22,7 +22,10 @@ from originexample.services.account import (
     SummaryGrouping,
     summarize_technologies,
     GetGgoSummaryRequest,
-    GetTransferSummaryRequest, TransferFilters, TransferDirection)
+    GetTransferSummaryRequest,
+    TransferFilters,
+    TransferDirection,
+)
 
 from .models import (
     MeasurementType,
@@ -205,10 +208,12 @@ class GetGgoDistributions(Controller):
         :rtype: List[SummaryGroup]
         """
         response = self.service.get_ggo_summary(token, GetGgoSummaryRequest(
-            category=category,
             resolution=SummaryResolution.ALL,
             fill=False,
-            filters=GgoFilters(begin_range=begin_range),
+            filters=GgoFilters(
+                category=category,
+                begin_range=begin_range,
+            ),
             grouping=[
                 SummaryGrouping.TECHNOLOGY_CODE,
                 SummaryGrouping.FUEL_CODE,
@@ -216,18 +221,6 @@ class GetGgoDistributions(Controller):
         ))
 
         return response.groups
-
-        # distribution = GgoDistribution()
-        #
-        # summarized = summarize_technologies(response.groups, grouping)
-        #
-        # for technology, summary_group in summarized:
-        #     distribution.technologies.append(GgoTechnology(
-        #         technology=technology,
-        #         amount=sum(summary_group.values),
-        #     ))
-        #
-        # return distribution
 
     def get_transfer_summary(self, token, begin_range, direction):
         """
@@ -278,16 +271,22 @@ class GetMeasurements(Controller):
         resolution = self.get_resolution(begin_range.delta)
 
         if request.measurement_type == MeasurementType.PRODUCTION:
-            category = GgoCategory.ISSUED
-            summary_filters = GgoFilters(begin_range=begin_range, issue_gsrn=gsrn)
+            ggo_filters = GgoFilters(
+                begin_range=begin_range,
+                category=GgoCategory.ISSUED,
+                issue_gsrn=gsrn,
+            )
         elif request.measurement_type == MeasurementType.CONSUMPTION:
-            category = GgoCategory.RETIRED
-            summary_filters = GgoFilters(begin_range=begin_range, retire_gsrn=gsrn)
+            ggo_filters = GgoFilters(
+                begin_range=begin_range,
+                category=GgoCategory.RETIRED,
+                retire_gsrn=gsrn,
+            )
         else:
             raise RuntimeError('Should NOT have happened!')
 
         ggos, labels = self.get_ggo_summary(
-            user.access_token, resolution, category, summary_filters)
+            user.access_token, resolution, ggo_filters)
 
         measurements = self.get_measurements(
             user.access_token, request.measurement_type, resolution, begin_range, gsrn)
@@ -356,11 +355,10 @@ class GetMeasurements(Controller):
         else:
             return DataSet(label=label)
 
-    def get_ggo_summary(self, token, resolution, category, filters):
+    def get_ggo_summary(self, token, resolution, filters):
         """
         :param str token:
         :param SummaryResolution resolution:
-        :param GgoCategory category:
         :param GgoFilters filters:
         :rtype: (list[DataSet], list[str])
         """
@@ -370,7 +368,6 @@ class GetMeasurements(Controller):
         ]
 
         request = GetGgoSummaryRequest(
-            category=category,
             filters=filters,
             resolution=resolution,
             grouping=grouping,
