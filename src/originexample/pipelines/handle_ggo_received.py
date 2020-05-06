@@ -48,7 +48,7 @@ def handle_ggo_received(task, subject, ggo_json, session):
         .has_sub(subject) \
         .one()
 
-    lock_key = '%s-%s' % (subject, ggo.begin)
+    lock_key = '%s-%s' % (subject, ggo.begin.strftime('%Y-%m-%d-%H-%M'))
 
     # This lock is in place to avoid timing issues when executing multiple
     # tasks for the same account at the same Ggo.begin, which can cause
