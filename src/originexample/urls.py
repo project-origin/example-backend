@@ -3,6 +3,7 @@ from .consuming import controllers as consuming
 from .commodities import controllers as commodities
 from .facilities import controllers as facilities
 from .agreements import controllers as agreements
+from .disclosures import controllers as disclosures
 
 
 urls = (
@@ -35,6 +36,13 @@ urls = (
     # GGOs
     ('/commodities/distributions', commodities.GetGgoDistributions()),
     ('/commodities/measurements', commodities.GetMeasurements()),
+
+    # Disclosure
+    ('/disclosure', disclosures.GetDisclosure()),
+    ('/disclosure/list', disclosures.GetDisclosureList()),
+    ('/disclosure/preview', disclosures.GetDisclosurePreview()),
+    ('/disclosure/create', disclosures.CreateDisclosure()),
+    ('/disclosure/delete', disclosures.DeleteDisclosure()),
 
     # Webhooks
     ('/webhook/on-ggo-received', consuming.OnGgoReceivedWebhook()),
