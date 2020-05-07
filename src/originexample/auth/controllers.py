@@ -160,6 +160,7 @@ class LoginCallback(Controller):
         """
         return redirect(f'{return_url}?success=0', code=303)
 
+
 class Logout(Controller):
     """
     TODO
@@ -170,12 +171,7 @@ class Logout(Controller):
         """
         :rtype: flask.Response
         """
-        
-        logout_url = backend.get_logout_url()
-
-        response.set_cookie('SID', id_token['sid'], domain=urlparse(FRONTEND_URL).netloc)
-
-        return redirect(logout_url, code=303)
+        return redirect(backend.get_logout_url(), code=303)
 
 
 class Error(Controller):

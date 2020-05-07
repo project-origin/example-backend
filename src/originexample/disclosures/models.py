@@ -1,48 +1,57 @@
-import sqlalchemy as sa
-from sqlalchemy.orm import relationship
 from dataclasses import dataclass, field
-from datetime import date
+from typing import List
 
-from originexample.db import ModelBase
-from originexample.tools import randomized_hash
-from originexample.facilities import FacilityFilters
-
-
-disclosures_facility_association = sa.Table(
-    'disclosures_facility_association', ModelBase.metadata,
-
-    sa.Column('disclosure_id', sa.Integer(), sa.ForeignKey('disclosures_disclosure.id'), index=True),
-    sa.Column('facility_id', sa.Integer(), sa.ForeignKey('facilities_facility.id'), index=True),
-
-    sa.UniqueConstraint('disclosure_id', 'facility_id'),
-)
+from originexample.common import DateRange, DataSet
+from originexample.facilities import MappedFacility, FacilityFilters
+from originexample.services.datahub import Disclosure
 
 
-class Disclosure(ModelBase):
-    """
-    TODO
-    """
-    __tablename__ = 'disclosures_disclosure'
-    __table_args__ = (
-        sa.UniqueConstraint('slug'),
-    )
+# -- GetDisclosure request and response --------------------------------------
 
-    id = sa.Column(sa.Integer(), primary_key=True, autoincrement=True, index=True)
-    public_id = sa.Column(sa.String(), index=True, default=randomized_hash)
-    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now())
-    slug = sa.Column(sa.String(), unique=True, index=True, nullable=False)
 
-    user_id = sa.Column(sa.Integer(), sa.ForeignKey('auth_user.id'), index=True, nullable=False)
-    user = relationship('User', foreign_keys=[user_id])
-    facilities = relationship('Facility', secondary=disclosures_facility_association)
+@dataclass
+class DisclosureDataSeries:
+    gsrn: str = field(default=None)
+    address: str = field(default=None)
+    measurements: List[int] = field(default_factory=list)
+    ggos: List[DataSet] = field(default_factory=list)
 
-    date_from = sa.Column(sa.Date(), nullable=False)
-    date_to = sa.Column(sa.Date(), nullable=False)
-    name = sa.Column(sa.String(), nullable=False)
-    description = sa.Column(sa.String())
 
-    def get_public_url(self):
-        return '%s/disclosure/%s' % (API_ROOT_URL, self.slug)
+@dataclass
+class GetDisclosureRequest:
+    id: str
+
+
+@dataclass
+class GetDisclosureResponse:
+    success: bool
+    labels: List[str]
+    data: List[DisclosureDataSeries]
+
+
+# -- GetDisclosurePreview request and response -------------------------------
+
+
+@dataclass
+class GetDisclosurePreviewRequest:
+    filters: FacilityFilters
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+
+
+@dataclass
+class GetDisclosurePreviewResponse:
+    success: bool
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+    facilities: List[MappedFacility]
+
+
+# -- GetDisclosureList request and response ----------------------------------
+
+
+@dataclass
+class GetDisclosureListResponse:
+    success: bool
+    disclosures: List[Disclosure]
 
 
 # -- CreateDisclosure request and response -----------------------------------
@@ -50,28 +59,24 @@ class Disclosure(ModelBase):
 
 @dataclass
 class CreateDisclosureRequest:
-    filters: FacilityFilters
-    date_from: date = field(metadata=dict(data_key='dateFrom', required=True))
-    date_to: date = field(metadata=dict(data_key='dateTo', required=True))
     name: str
     description: str
+    gsrn: List[str]
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+    publicize_meteringpoints: bool = field(metadata=dict(data_key='publicizeMeteringpoints'))
+    publicize_gsrn: bool = field(metadata=dict(data_key='publicizeGsrn'))
+    publicize_physical_address: bool = field(metadata=dict(data_key='publicizePhysicalAddress'))
 
 
 @dataclass
 class CreateDisclosureResponse:
     success: bool
-    url: str
+    id: str
 
 
-# -- GetPublicDisclosure request and response --------------------------------
-
-
-@dataclass
-class GetPublicDisclosureRequest:
-    slug: str
+# -- DeleteDisclosure request and response -----------------------------------
 
 
 @dataclass
-class GetPublicDisclosureResponse:
-    success: bool
-    url: str
+class DeleteDisclosureRequest:
+    id: str
