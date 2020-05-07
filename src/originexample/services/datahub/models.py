@@ -3,6 +3,8 @@ from typing import List
 from datetime import datetime, date
 from dataclasses import dataclass, field
 
+from marshmallow_dataclass import NewType
+
 from originexample.common import DateTimeRange, DateRange
 
 from ..shared_models import MeasurementType, SummaryResolution, SummaryGroup
@@ -57,6 +59,8 @@ class MeasurementFilters:
 @dataclass
 class Disclosure:
     id: str
+    name: str
+    description: str
     begin: date
     end: date
     publicize_meteringpoints: bool = field(metadata=dict(data_key='publicizeMeteringpoints'))
@@ -155,6 +159,9 @@ class GetOnboadingUrlResponse:
 # -- GetDisclosure request and response --------------------------------------
 
 
+MeasurementValue = NewType('MeasurementValue', int, allow_none=True)
+
+
 @dataclass
 class DisclosureState(Enum):
     PENDING = 'PENDING'
@@ -164,26 +171,26 @@ class DisclosureState(Enum):
 
 @dataclass
 class DisclosureDataSeries:
-    gsrn: str = field()
-    address: str = field()
-    measurements: List[int] = field(default_factory=list)
+    gsrn: str = field(default=None)
+    address: str = field(default=None)
+    measurements: List[MeasurementValue] = field(default_factory=list)
     ggos: List[SummaryGroup] = field(default_factory=list)
 
 
 @dataclass
 class GetDisclosureRequest:
     id: str
-    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
-    resolution: SummaryResolution = field(metadata=dict(by_value=True))
+    resolution: SummaryResolution = field(default=None, metadata=dict(by_value=True))
+    date_range: DateRange = field(default=None, metadata=dict(data_key='dateRange'))
 
 
 @dataclass
 class GetDisclosureResponse:
     success: bool
-    message: str = field()
     state: DisclosureState = field(metadata=dict(by_value=True))
     labels: List[str]
     data: List[DisclosureDataSeries]
+    message: str = field(default=None)
 
 
 # -- GetDisclosureList request and response ----------------------------------
@@ -200,12 +207,14 @@ class GetDisclosureListResponse:
 
 @dataclass
 class CreateDisclosureRequest:
+    name: str
+    description: str
+    gsrn: List[str]
     begin: date
     end: date
     publicize_meteringpoints: bool = field(metadata=dict(data_key='publicizeMeteringpoints'))
     publicize_gsrn: bool = field(metadata=dict(data_key='publicizeGsrn'))
     publicize_physical_address: bool = field(metadata=dict(data_key='publicizePhysicalAddress'))
-    gsrn: List[str] = field(default_factory=list)
 
 
 @dataclass

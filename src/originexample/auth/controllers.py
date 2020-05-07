@@ -160,6 +160,7 @@ class LoginCallback(Controller):
         """
         return redirect(f'{return_url}?success=0', code=303)
 
+
 class Logout(Controller):
     """
     TODO
@@ -170,7 +171,6 @@ class Logout(Controller):
         """
         :rtype: flask.Response
         """
-        
         return redirect(backend.get_logout_url(), code=303)
 
 

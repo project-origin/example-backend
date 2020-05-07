@@ -65,6 +65,15 @@ class FacilityQuery(object):
             Facility.gsrn == gsrn,
         ))
 
+    def has_any_gsrn(self, gsrn):
+        """
+        :param list[str] gsrn:
+        :rtype: FacilityQuery
+        """
+        return FacilityQuery(self.session, self.q.filter(
+            Facility.gsrn.in_(gsrn),
+        ))
+
     def has_public_id(self, public_id):
         """
         :param str public_id:
