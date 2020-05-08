@@ -1,20 +1,21 @@
-from functools import partial
-
+import csv
 import marshmallow_dataclass as md
+from io import StringIO
+from functools import partial
+from flask import make_response
 
 from originexample.http import Controller
 from originexample.db import inject_session
-from originexample.facilities import FacilityQuery
+from originexample.facilities import FacilityQuery, Facility, FacilityFilters, get_technology
 from originexample.common import DataSet, DateTimeRange
 from originexample.auth import User, requires_login
 from originexample.services import SummaryResolution
-
 from originexample.services.datahub import (
     DataHubService,
     GetMeasurementSummaryRequest,
     MeasurementFilters,
+    SummaryGroup,
 )
-
 from originexample.services.account import (
     AccountService,
     GgoFilters,
@@ -25,7 +26,7 @@ from originexample.services.account import (
     GetTransferSummaryRequest,
     TransferFilters,
     TransferDirection,
-)
+    GetGgoListRequest, Ggo)
 
 from .models import (
     MeasurementType,
@@ -37,6 +38,25 @@ from .models import (
     GetMeasurementsRequest,
     GetMeasurementsResponse,
 )
+
+
+account = AccountService()
+datahub = DataHubService()
+
+
+def get_resolution(delta):
+    """
+    :param timedelta delta:
+    :rtype: SummaryResolution
+    """
+    if delta.days >= (365 * 3):
+        return SummaryResolution.YEAR
+    elif delta.days >= 60:
+        return SummaryResolution.MONTH
+    elif delta.days >= 3:
+        return SummaryResolution.DAY
+    else:
+        return SummaryResolution.HOUR
 
 
 class GetGgoDistributions(Controller):
@@ -55,18 +75,6 @@ class GetGgoDistributions(Controller):
         :param User user:
         :rtype: GetGgoDistributionsResponse
         """
-        # gsrn = self.get_gsrn_numbers(user, request.filters)
-        #
-        # if not gsrn:
-        #     return GetMeasurementsResponse(success=True)
-        #
-        # distributions = self.collector.get_ggo_distribution_bundle(
-        #     token=token,
-        #     gsrn=gsrn,
-        #     date_from=request.date.begin,
-        #     date_to=request.date.end,
-        # )
-
         begin_range = DateTimeRange.from_date_range(request.date_range)
 
         bundle = GgoDistributionBundle(
@@ -82,22 +90,6 @@ class GetGgoDistributions(Controller):
             success=True,
             distributions=bundle,
         )
-
-    # @inject_session
-    # def get_gsrn_numbers(self, user, filters, session):
-    #     """
-    #     :param User user:
-    #     :param FacilityFilters filters:
-    #     :param Session session:
-    #     :rtype: list[str]
-    #     """
-    #     query = FacilityQuery(session) \
-    #         .belongs_to(user)
-    #
-    #     if filters is not None:
-    #         query = query.apply_filters(filters)
-    #
-    #     return query.get_distinct_gsrn()
 
     def get_issued(self, token, begin_range):
         """
@@ -252,9 +244,6 @@ class GetMeasurements(Controller):
     Request = md.class_schema(GetMeasurementsRequest)
     Response = md.class_schema(GetMeasurementsResponse)
 
-    account = AccountService()
-    datahub = DataHubService()
-
     @requires_login
     def handle_request(self, request, user):
         """
@@ -268,7 +257,7 @@ class GetMeasurements(Controller):
             return GetMeasurementsResponse(success=True)
 
         begin_range = DateTimeRange.from_date_range(request.date_range)
-        resolution = self.get_resolution(begin_range.delta)
+        resolution = get_resolution(begin_range.delta)
 
         if request.measurement_type == MeasurementType.PRODUCTION:
             ggo_filters = GgoFilters(
@@ -289,7 +278,8 @@ class GetMeasurements(Controller):
             user.access_token, resolution, ggo_filters)
 
         measurements = self.get_measurements(
-            user.access_token, request.measurement_type, resolution, begin_range, gsrn)
+            user.access_token, request.measurement_type,
+            resolution, begin_range, gsrn)
 
         return GetMeasurementsResponse(
             success=True,
@@ -314,20 +304,6 @@ class GetMeasurements(Controller):
 
         return query.get_distinct_gsrn()
 
-    def get_resolution(self, delta):
-        """
-        :param timedelta delta:
-        :rtype: SummaryResolution
-        """
-        if delta.days >= (365 * 3):
-            return SummaryResolution.YEAR
-        elif delta.days >= 60:
-            return SummaryResolution.MONTH
-        elif delta.days >= 3:
-            return SummaryResolution.DAY
-        else:
-            return SummaryResolution.HOUR
-
     def get_measurements(self, token, measurement_type, resolution, begin_range, gsrn):
         """
         :param str token:
@@ -347,7 +323,7 @@ class GetMeasurements(Controller):
             ),
         )
 
-        response = self.datahub.get_measurement_summary(token, request)
+        response = datahub.get_measurement_summary(token, request)
         label = measurement_type.value.capitalize()
 
         if response.groups:
@@ -374,7 +350,7 @@ class GetMeasurements(Controller):
             fill=True,
         )
 
-        response = self.account.get_ggo_summary(token, request)
+        response = account.get_ggo_summary(token, request)
         summarized = summarize_technologies(response.groups, grouping)
         datasets = []
 
@@ -385,3 +361,379 @@ class GetMeasurements(Controller):
             ))
 
         return datasets, response.labels
+
+
+# -- CSV EXPORTING -----------------------------------------------------------
+
+
+class ExportGgoSummaryCSV(Controller):
+    """
+    Exports a CSV document with the following columns:
+
+    Type | Technology Code | Fuel Code | Technology | Begin | Amount
+
+    Where "Type" is either ISSUED or RETIRED.
+    """
+    Request = md.class_schema(GetMeasurementsRequest)
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param GetMeasurementsRequest request:
+        :param User user:
+        :rtype: flask.Response
+        """
+        facilities = self.get_facilities(user, request.filters)
+        gsrn = [f.gsrn for f in facilities]
+
+        if not gsrn:
+            return False
+
+        begin_range = DateTimeRange.from_date_range(request.date_range)
+        resolution = get_resolution(begin_range.delta)
+
+        issued, issued_labels = self.get_ggo_summary(
+            token=user.access_token,
+            resolution=resolution,
+            filters=GgoFilters(
+                begin_range=begin_range,
+                category=GgoCategory.ISSUED,
+                issue_gsrn=gsrn,
+            ),
+        )
+
+        retired, retired_labels = self.get_ggo_summary(
+            token=user.access_token,
+            resolution=resolution,
+            filters=GgoFilters(
+                begin_range=begin_range,
+                category=GgoCategory.RETIRED,
+                retire_gsrn=gsrn,
+            ),
+        )
+
+        # -- Write CSV -------------------------------------------------------
+
+        csv_file = StringIO()
+        csv_writer = csv.writer(
+            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+        # Headers
+        csv_writer.writerow([
+            'Type',
+            'TechnologyCode',
+            'FuelCode',
+            'Technology',
+            'Begin',
+            'Amount',
+        ])
+
+        # Issued GGOs
+        for summary_group in issued:
+            technology_code, fuel_code = summary_group.group
+
+            for label, amount in zip(issued_labels, summary_group.values):
+                csv_writer.writerow([
+                    'ISSUED',
+                    technology_code,
+                    fuel_code,
+                    get_technology(technology_code, fuel_code),
+                    label,
+                    amount,
+                ])
+
+        # Retired GGOs
+        for summary_group in retired:
+            technology_code, fuel_code = summary_group.group
+
+            for label, amount in zip(retired_labels, summary_group.values):
+                csv_writer.writerow([
+                    'RETIRED',
+                    technology_code,
+                    fuel_code,
+                    get_technology(technology_code, fuel_code),
+                    label,
+                    amount,
+                ])
+
+        # -- HTTP response ---------------------------------------------------
+
+        response = make_response(csv_file.getvalue())
+        response.headers["Content-Disposition"] = 'attachment; filename=ggo-summary.csv'
+        response.headers["Content-type"] = 'text/csv'
+
+        return response
+
+    @inject_session
+    def get_facilities(self, user, filters, session):
+        """
+        :param User user:
+        :param FacilityFilters filters:
+        :param Session session:
+        :rtype: list[Facility]
+        """
+        query = FacilityQuery(session) \
+            .belongs_to(user)
+
+        if filters is not None:
+            query = query.apply_filters(filters)
+
+        return query.all()
+
+    def get_ggo_summary(self, token, resolution, filters):
+        """
+        :param str token:
+        :param SummaryResolution resolution:
+        :param GgoFilters filters:
+        :rtype: list[SummaryGroup]
+        """
+        request = GetGgoSummaryRequest(
+            resolution=resolution,
+            fill=True,
+            filters=filters,
+            grouping=[
+                SummaryGrouping.TECHNOLOGY_CODE,
+                SummaryGrouping.FUEL_CODE,
+            ],
+        )
+
+        response = account.get_ggo_summary(token, request)
+
+        return response.groups, response.labels
+
+
+class ExportGgoListCSV(Controller):
+    """
+    Exports a CSV document with the following columns:
+
+    Address | Type | Technology Code | Fuel Code | Technology | Begin | Amount | GSRN | Sector
+
+    Where:
+    - "Address" is the GGO's address on the ledger
+    - "Type" is either ISSUED or RETIRED
+    """
+    Request = md.class_schema(GetMeasurementsRequest)
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param GetMeasurementsRequest request:
+        :param User user:
+        :rtype: flask.Response
+        """
+        facilities = self.get_facilities(user, request.filters)
+        gsrn = [f.gsrn for f in facilities]
+
+        if not gsrn:
+            return False
+
+        begin_range = DateTimeRange.from_date_range(request.date_range)
+
+        issued = self.get_ggos(user.access_token, GgoFilters(
+            begin_range=begin_range,
+            category=GgoCategory.ISSUED,
+            issue_gsrn=gsrn,
+        ))
+
+        retired = self.get_ggos(user.access_token, GgoFilters(
+            begin_range=begin_range,
+            category=GgoCategory.RETIRED,
+            retire_gsrn=gsrn,
+        ))
+
+        # -- Write CSV -------------------------------------------------------
+
+        csv_file = StringIO()
+        csv_writer = csv.writer(
+            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+        # Headers
+        csv_writer.writerow([
+            'Address',
+            'Type',
+            'TechnologyCode',
+            'FuelCode',
+            'Technology',
+            'Begin',
+            'Amount',
+            'Sector',
+        ])
+
+        # Issued GGOs
+        for ggo in issued:
+            csv_writer.writerow([
+                ggo.address,
+                'ISSUED',
+                ggo.technology_code,
+                ggo.fuel_code,
+                get_technology(ggo.technology_code, ggo.fuel_code),
+                ggo.begin,
+                ggo.amount,
+                ggo.sector,
+            ])
+
+        # Retired GGOs
+        for ggo in retired:
+            csv_writer.writerow([
+                ggo.address,
+                'RETIRED',
+                ggo.technology_code,
+                ggo.fuel_code,
+                get_technology(ggo.technology_code, ggo.fuel_code),
+                ggo.begin,
+                ggo.amount,
+                ggo.sector,
+            ])
+
+        # -- HTTP response ---------------------------------------------------
+
+        response = make_response(csv_file.getvalue())
+        response.headers["Content-Disposition"] = 'attachment; filename=ggo-list.csv'
+        response.headers["Content-type"] = 'text/csv'
+
+        return response
+
+    @inject_session
+    def get_facilities(self, user, filters, session):
+        """
+        :param User user:
+        :param FacilityFilters filters:
+        :param Session session:
+        :rtype: list[Facility]
+        """
+        query = FacilityQuery(session) \
+            .belongs_to(user)
+
+        if filters is not None:
+            query = query.apply_filters(filters)
+
+        return query.all()
+
+    def get_ggos(self, token, filters):
+        """
+        :param str token:
+        :param GgoFilters filters:
+        :rtype: collections.abc.Iterable[Ggo]
+        """
+        offset = 0
+        limit = 100
+
+        while 1:
+            response = account.get_ggo_list(token, GetGgoListRequest(
+                offset=offset,
+                limit=limit,
+                filters=filters,
+            ))
+
+            yield from response.results
+
+            offset += limit
+
+            if offset >= response.total:
+                break
+
+
+class ExportMeasurementsCSV(Controller):
+    """
+    Exports a CSV document with the following columns:
+
+    GSRN | Facility name | Facility type | Begin | End | Amount
+
+    Where "Facility Type" is either PRODUCTION or CONSUMPTION.
+    """
+    Request = md.class_schema(GetMeasurementsRequest)
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param GetMeasurementsRequest request:
+        :param User user:
+        :rtype: flask.Response
+        """
+        facilities = self.get_facilities(user, request.filters)
+        facilities_mapped = {f.gsrn: f for f in facilities}
+        gsrn = [f.gsrn for f in facilities]
+
+        if not gsrn:
+            return False
+
+        begin_range = DateTimeRange.from_date_range(request.date_range)
+        resolution = get_resolution(begin_range.delta)
+
+        measurements, labels = self.get_measurements(
+            user.access_token, resolution, begin_range, gsrn)
+
+        # -- Write CSV -------------------------------------------------------
+
+        csv_file = StringIO()
+        csv_writer = csv.writer(
+            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+        # Headers
+        csv_writer.writerow([
+            'GSRN',
+            'FacilityName',
+            'FacilityType',
+            'Begin',
+            'Amount',
+        ])
+
+        # Measurements
+        for summary_group in measurements:
+            gsrn = summary_group.group[0]
+            facility = facilities_mapped[gsrn]
+
+            for label, amount in zip(labels, summary_group.values):
+                csv_writer.writerow([
+                    gsrn,
+                    facility.name,
+                    facility.facility_type,
+                    label,
+                    amount,
+                ])
+
+        # -- HTTP response ---------------------------------------------------
+
+        response = make_response(csv_file.getvalue())
+        response.headers["Content-Disposition"] = 'attachment; filename=measurements.csv'
+        response.headers["Content-type"] = 'text/csv'
+
+        return response
+
+    @inject_session
+    def get_facilities(self, user, filters, session):
+        """
+        :param User user:
+        :param FacilityFilters filters:
+        :param Session session:
+        :rtype: list[Facility]
+        """
+        query = FacilityQuery(session) \
+            .belongs_to(user)
+
+        if filters is not None:
+            query = query.apply_filters(filters)
+
+        return query.all()
+
+    def get_measurements(self, token, resolution, begin_range, gsrn):
+        """
+        :param str token:
+        :param SummaryResolution resolution:
+        :param DateTimeRange begin_range:
+        :param list[str] gsrn:
+        :rtype: list[SummaryGroup]
+        """
+        request = GetMeasurementSummaryRequest(
+            resolution=resolution,
+            fill=True,
+            grouping=['gsrn'],
+            filters=MeasurementFilters(
+                begin_range=begin_range,
+                gsrn=gsrn,
+            ),
+        )
+
+        response = datahub.get_measurement_summary(token, request)
+
+        return response.groups, response.labels

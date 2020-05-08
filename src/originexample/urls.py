@@ -36,6 +36,9 @@ urls = (
     # GGOs
     ('/commodities/distributions', commodities.GetGgoDistributions()),
     ('/commodities/measurements', commodities.GetMeasurements()),
+    ('/commodities/measurements/csv', commodities.ExportMeasurementsCSV()),
+    ('/commodities/ggo-summary/csv', commodities.ExportGgoSummaryCSV()),
+    ('/commodities/ggo-list/csv', commodities.ExportGgoListCSV()),
 
     # Disclosure
     ('/disclosure', disclosures.GetDisclosure()),
