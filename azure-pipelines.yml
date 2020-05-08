@@ -9,7 +9,7 @@ variables:
   imageName: 'projectorigin/example-backend'
   vmImageName: 'ubuntu-latest'
   ${{ if eq(variables['Build.SourceBranchName'], 'master') }}:
-    kubeCon: 'alpha-origin-con'
+    kubeCon: 'test-kube-con'
     tag: '$(Build.BuildId)'
     namespace: 'test-project-origin'
   ${{ if eq(variables['Build.SourceBranchName'], 'develop') }}:
