@@ -1,6 +1,7 @@
 import requests
 import marshmallow_dataclass as md
 
+from originexample.http import Unauthorized
 from originexample import logger
 from originexample.settings import (
     PROJECT_URL,
@@ -63,7 +64,9 @@ class AccountService(object):
             })
             raise
 
-        if response.status_code != 200:
+        if response.status_code == 401:
+            raise Unauthorized
+        elif response.status_code != 200:
             logger.error(f'Invoking AccountService resulted in a status != 200', extra={
                 'url': url,
                 'verify_ssl': verify_ssl,
