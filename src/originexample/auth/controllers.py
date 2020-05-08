@@ -208,13 +208,19 @@ class GetOnboardingUrl(Controller):
     service = DataHubService()
 
     @requires_login
-    def handle_request(self, user):
+    @atomic
+    def handle_request(self, user, session):
         """
         :param User user:
+        :param Session session:
         :rtype: GetOnboardingUrlResponse
         """
         response = self.service.get_onboarding_url(
             user.access_token, FRONTEND_URL)
+
+        session.query(User) \
+            .filter(User.id == user.id) \
+            .update({'has_performed_onboarding': True})
 
         return GetOnboardingUrlResponse(
             success=True,
