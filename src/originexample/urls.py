@@ -32,6 +32,7 @@ urls = (
     ('/agreements/propose/respond', agreements.RespondToProposal()),
     ('/agreements/propose/withdraw', agreements.WithdrawProposal()),
     ('/agreements/propose/pending-count', agreements.CountPendingProposals()),
+    ('/agreements/ggo-summary/csv', agreements.ExportGgoSummaryCSV()),
 
     # GGOs
     ('/commodities/distributions', commodities.GetGgoDistributions()),
