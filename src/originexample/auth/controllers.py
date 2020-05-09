@@ -33,7 +33,11 @@ backend = AuthBackend()
 
 class Login(Controller):
     """
-    TODO
+    Redirects the user to IdentityService login URL, which
+    contains a unique "login challenge" identifying the user.
+
+    Saves the provided "return_url" to redis cache, so it's available when
+    the client is redirected back to the LoginCallback endpoint (below).
     """
     METHOD = 'GET'
 
@@ -137,6 +141,7 @@ class LoginCallback(Controller):
         user = User(
             sub=id_token['sub'],
             name=id_token['company'],
+            email=id_token['email'],
             access_token=token['access_token'],
             refresh_token=token['refresh_token'],
             token_expire=expires,
@@ -230,18 +235,35 @@ class GetOnboardingUrl(Controller):
 
 class GetProfile(Controller):
     """
-    TODO
+    Refreshes user's profile data along with tokens,
+    and returns the User profile.
     """
     Response = md.class_schema(GetProfileResponse)
 
     @requires_login
-    @inject_session
+    @atomic
     def handle_request(self, user, session):
         """
         :param User user:
         :param Session session:
         :rtype: GetProfileResponse
         """
+        token = backend.refresh_token(user.refresh_token)
+        id_token = backend.get_id_token(token)
+
+        # Update user profile and tokens
+        session.query(User) \
+            .filter(User.id == user.id) \
+            .update({
+                'email': id_token['email'],
+                'name': id_token['company'],
+                'access_token': token['access_token'],
+                'refresh_token': token['refresh_token'],
+                'token_expire': datetime
+                    .fromtimestamp(token['expires_at'])
+                    .replace(tzinfo=timezone.utc),
+            })
+
         return GetProfileResponse(
             success=True,
             user=user,

@@ -22,6 +22,7 @@ class User(ModelBase):
 
     # Name / Company name
     name = sa.Column(sa.String(), nullable=False)
+    email = sa.Column(sa.String())
 
     # Subject ID / Account number
     sub = sa.Column(sa.String(), index=True, unique=True, nullable=False)

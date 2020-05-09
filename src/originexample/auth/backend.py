@@ -59,7 +59,7 @@ class AuthBackend(object):
     def refresh_token(self, refresh_token):
         """
         :param str refresh_token:
-        :rtype:
+        :rtype: OAuth2Token
         """
         return self.client.refresh_token(
             url=HYDRA_TOKEN_ENDPOINT,
