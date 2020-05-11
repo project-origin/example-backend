@@ -2,6 +2,8 @@ import marshmallow_dataclass as md
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
+from flask import make_response
+
 from originexample import logger
 from originexample.db import atomic, inject_session
 from originexample.http import Controller, redirect, BadRequest
@@ -9,8 +11,10 @@ from originexample.services.datahub import DataHubService
 from originexample.services.account import AccountService
 from originexample.cache import redis
 from originexample.settings import (
+    PROJECT_URL,
     FRONTEND_URL,
     ACCOUNT_SERVICE_LOGIN_URL,
+    IDENTITY_SERVICE_EDIT_PROFILE_URL,
 )
 
 from .queries import UserQuery
@@ -48,9 +52,14 @@ class Login(Controller):
         :param LoginRequest request:
         :rtype: flask.Response
         """
+        if request.return_url:
+            return_url = request.return_url
+        else:
+            return_url = FRONTEND_URL
+
         login_url, state = backend.register_login_state()
 
-        redis.set(state, request.return_url, ex=3600)
+        redis.set(state, return_url, ex=3600)
 
         return redirect(login_url, code=303)
 
@@ -166,6 +175,36 @@ class LoginCallback(Controller):
         return redirect(f'{return_url}?success=0', code=303)
 
 
+class EditProfile(Controller):
+    """
+    Redirects the user to IdentityService edit profile URL
+    """
+    METHOD = 'GET'
+
+    def handle_request(self):
+        """
+        :rtype: flask.Response
+        """
+        return_url = f'{PROJECT_URL}/auth/edit-profile/callback'
+        url = f'{IDENTITY_SERVICE_EDIT_PROFILE_URL}?return_url={return_url}'
+        return redirect(url, code=303)
+
+
+class EditProfileCallback(Controller):
+    """
+    Callback endpoint for when then user has completed editing his profile.
+    Redirects to the login endpoint, which forces the IdentityService
+    to refresh the user's id_token.
+    """
+    METHOD = 'GET'
+
+    def handle_request(self):
+        """
+        :rtype: flask.Response
+        """
+        return redirect('/auth/login', code=303)
+
+
 class Logout(Controller):
     """
     TODO
@@ -176,7 +215,9 @@ class Logout(Controller):
         """
         :rtype: flask.Response
         """
-        return redirect(backend.get_logout_url(), code=303)
+        response = make_response(redirect(backend.get_logout_url(), code=303))
+        response.delete_cookie('SID', domain=urlparse(FRONTEND_URL).netloc)
+        return response
 
 
 class Error(Controller):
@@ -263,6 +304,9 @@ class GetProfile(Controller):
                     .fromtimestamp(token['expires_at'])
                     .replace(tzinfo=timezone.utc),
             })
+
+        user.email = id_token['email']
+        user.name = id_token['company']
 
         return GetProfileResponse(
             success=True,

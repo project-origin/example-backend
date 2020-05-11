@@ -44,6 +44,7 @@ FRONTEND_URL = os.environ['FRONTEND_URL']
 DATAHUB_SERVICE_URL = os.environ['DATAHUB_SERVICE_URL']
 ACCOUNT_SERVICE_URL = os.environ['ACCOUNT_SERVICE_URL']
 ACCOUNT_SERVICE_LOGIN_URL = os.environ['ACCOUNT_SERVICE_LOGIN_URL']
+IDENTITY_SERVICE_EDIT_PROFILE_URL = os.environ['IDENTITY_SERVICE_EDIT_PROFILE_URL']
 
 
 # -- Auth/tokens -------------------------------------------------------------

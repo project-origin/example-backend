@@ -11,6 +11,8 @@ urls = (
     # Auth / Users
     ('/auth/login', auth.Login()),
     ('/auth/login/callback', auth.LoginCallback()),
+    ('/auth/edit-profile', auth.EditProfile()),
+    ('/auth/edit-profile/callback', auth.EditProfileCallback()),
     ('/auth/logout', auth.Logout()),
     ('/auth/error', auth.Error()),
     ('/auth/get-onboarding-url', auth.GetOnboardingUrl()),

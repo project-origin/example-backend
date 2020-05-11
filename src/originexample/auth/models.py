@@ -60,9 +60,7 @@ class MappedUser:
 class LoginRequest:
     class Meta:
         unknown = EXCLUDE
-    return_url: str = field(metadata=dict(data_key='returnUrl'))
-
-
+    return_url: str = field(default=None, metadata=dict(data_key='returnUrl'))
 
 
 # -- Error request and response --------------------------------------------

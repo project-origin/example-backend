@@ -20,6 +20,7 @@ Name | Description | Example
 `DATAHUB_SERVICE_URL` | Public URL to DataHubService without trailing slash | `https://datahub.projectorigin.dk`
 `ACCOUNT_SERVICE_URL` | Public URL to AccountService without trailing slash | `https://account.projectorigin.dk`
 `ACCOUNT_SERVICE_LOGIN_URL` | Public URL to AccountService login endpoint | `https://account.projectorigin.dk/auth/login`
+`IDENTITY_SERVICE_EDIT_PROFILE_URL` | Public URL to IdentityService edit profile endpoint | `https://identity.projectorigin.dk/edit-profile`
 **Authentication:** | |
 `HYDRA_URL` | URL to Hydra without trailing slash | `https://auth.projectorigin.dk`
 `HYDRA_INTROSPECT_URL` | URL to Hydra Introspect without trailing slash | `https://authintrospect.projectorigin.dk`
