@@ -90,24 +90,26 @@ class DataHubService(object):
         :param str return_url:
         :rtype: GetOnboadingUrlResponse
         """
-        return self.invoke(
-            token=token,
-            path='/onboarding/get-url',
-            request=GetOnboadingUrlRequest(return_url=return_url),
-            request_schema=md.class_schema(GetOnboadingUrlRequest),
-            response_schema=md.class_schema(GetOnboadingUrlResponse),
-        )
+        with logger.tracer.span('DataHubService.GetOnboardingUrl'):
+            return self.invoke(
+                token=token,
+                path='/onboarding/get-url',
+                request=GetOnboadingUrlRequest(return_url=return_url),
+                request_schema=md.class_schema(GetOnboadingUrlRequest),
+                response_schema=md.class_schema(GetOnboadingUrlResponse),
+            )
 
     def get_meteringpoints(self, token):
         """
         :param str token:
         :rtype: GetMeteringPointsResponse
         """
-        return self.invoke(
-            token=token,
-            path='/meteringpoints',
-            response_schema=md.class_schema(GetMeteringPointsResponse),
-        )
+        with logger.tracer.span('DataHubService.GetMeteringPoints'):
+            return self.invoke(
+                token=token,
+                path='/meteringpoints',
+                response_schema=md.class_schema(GetMeteringPointsResponse),
+            )
 
     def get_production(self, token, request):
         """
@@ -115,13 +117,14 @@ class DataHubService(object):
         :param GetMeasurementRequest request:
         :rtype: GetMeasurementResponse
         """
-        return self.invoke(
-            token=token,
-            path='/measurements/produced',
-            request=request,
-            request_schema=md.class_schema(GetMeasurementRequest),
-            response_schema=md.class_schema(GetMeasurementResponse),
-        )
+        with logger.tracer.span('DataHubService.GetProductionMeaurement'):
+            return self.invoke(
+                token=token,
+                path='/measurements/produced',
+                request=request,
+                request_schema=md.class_schema(GetMeasurementRequest),
+                response_schema=md.class_schema(GetMeasurementResponse),
+            )
 
     def get_consumption(self, token, request):
         """
@@ -129,13 +132,14 @@ class DataHubService(object):
         :param GetMeasurementRequest request:
         :rtype: GetMeasurementResponse
         """
-        return self.invoke(
-            token=token,
-            path='/measurements/consumed',
-            request=request,
-            request_schema=md.class_schema(GetMeasurementRequest),
-            response_schema=md.class_schema(GetMeasurementResponse),
-        )
+        with logger.tracer.span('DataHubService.GetConsumptionMeasurement'):
+            return self.invoke(
+                token=token,
+                path='/measurements/consumed',
+                request=request,
+                request_schema=md.class_schema(GetMeasurementRequest),
+                response_schema=md.class_schema(GetMeasurementResponse),
+            )
 
     def get_measurement_begin_range(self, token, request):
         """
@@ -143,13 +147,14 @@ class DataHubService(object):
         :param GetBeginRangeRequest request:
         :rtype: GetBeginRangeResponse
         """
-        return self.invoke(
-            token=token,
-            path='/measurements/begin-range',
-            request=request,
-            request_schema=md.class_schema(GetBeginRangeRequest),
-            response_schema=md.class_schema(GetBeginRangeResponse),
-        )
+        with logger.tracer.span('DataHubService.GetMeasurementsBeginRange'):
+            return self.invoke(
+                token=token,
+                path='/measurements/begin-range',
+                request=request,
+                request_schema=md.class_schema(GetBeginRangeRequest),
+                response_schema=md.class_schema(GetBeginRangeResponse),
+            )
 
     def get_measurement_summary(self, token, request):
         """
@@ -157,36 +162,39 @@ class DataHubService(object):
         :param GetMeasurementSummaryRequest request:
         :rtype: GetMeasurementSummaryResponse
         """
-        return self.invoke(
-            token=token,
-            path='/measurements/summary',
-            request=request,
-            request_schema=md.class_schema(GetMeasurementSummaryRequest),
-            response_schema=md.class_schema(GetMeasurementSummaryResponse),
-        )
+        with logger.tracer.span('DataHubService.GetMeasurementsSummary'):
+            return self.invoke(
+                token=token,
+                path='/measurements/summary',
+                request=request,
+                request_schema=md.class_schema(GetMeasurementSummaryRequest),
+                response_schema=md.class_schema(GetMeasurementSummaryResponse),
+            )
 
     def get_disclosure(self, request):
         """
         :param GetDisclosureRequest request:
         :rtype: GetDisclosureResponse
         """
-        return self.invoke(
-            path='/disclosure',
-            request=request,
-            request_schema=md.class_schema(GetDisclosureRequest),
-            response_schema=md.class_schema(GetDisclosureResponse),
-        )
+        with logger.tracer.span('DataHubService.GetDisclosure'):
+            return self.invoke(
+                path='/disclosure',
+                request=request,
+                request_schema=md.class_schema(GetDisclosureRequest),
+                response_schema=md.class_schema(GetDisclosureResponse),
+            )
 
     def get_disclosure_list(self, token):
         """
         :param str token:
         :rtype: GetDisclosureListResponse
         """
-        return self.invoke(
-            token=token,
-            path='/disclosure/list',
-            response_schema=md.class_schema(GetDisclosureListResponse),
-        )
+        with logger.tracer.span('DataHubService.GetDisclosureUrl'):
+            return self.invoke(
+                token=token,
+                path='/disclosure/list',
+                response_schema=md.class_schema(GetDisclosureListResponse),
+            )
 
     def create_disclosure(self, token, request):
         """
@@ -194,13 +202,14 @@ class DataHubService(object):
         :param CreateDisclosureRequest request:
         :rtype: CreateDisclosureResponse
         """
-        return self.invoke(
-            token=token,
-            path='/disclosure/create',
-            request=request,
-            request_schema=md.class_schema(CreateDisclosureRequest),
-            response_schema=md.class_schema(CreateDisclosureResponse),
-        )
+        with logger.tracer.span('DataHubService.CreateDisclosure'):
+            return self.invoke(
+                token=token,
+                path='/disclosure/create',
+                request=request,
+                request_schema=md.class_schema(CreateDisclosureRequest),
+                response_schema=md.class_schema(CreateDisclosureResponse),
+            )
 
     def delete_disclosure(self, token, request):
         """
@@ -208,13 +217,14 @@ class DataHubService(object):
         :param DeleteDisclosureRequest request:
         :rtype: DeleteDisclosureResponse
         """
-        return self.invoke(
-            token=token,
-            path='/disclosure/delete',
-            request=request,
-            request_schema=md.class_schema(DeleteDisclosureRequest),
-            response_schema=md.class_schema(DeleteDisclosureResponse),
-        )
+        with logger.tracer.span('DataHubService.DeleteDisclosure'):
+            return self.invoke(
+                token=token,
+                path='/disclosure/delete',
+                request=request,
+                request_schema=md.class_schema(DeleteDisclosureRequest),
+                response_schema=md.class_schema(DeleteDisclosureResponse),
+            )
 
     def webhook_on_meteringpoints_available_subscribe(self, token):
         """
@@ -223,10 +233,11 @@ class DataHubService(object):
         """
         url = f'{PROJECT_URL}/webhook/on-meteringpoints-available'
 
-        return self.invoke(
-            token=token,
-            path='/webhook/on-meteringpoints-available/subscribe',
-            request=WebhookSubscribeRequest(url=url),
-            request_schema=md.class_schema(WebhookSubscribeRequest),
-            response_schema=md.class_schema(WebhookSubscribeResponse),
-        )
+        with logger.tracer.span('DataHubService.SubscribeOnMeteringPointsAvailableWebhook'):
+            return self.invoke(
+                token=token,
+                path='/webhook/on-meteringpoints-available/subscribe',
+                request=WebhookSubscribeRequest(url=url),
+                request_schema=md.class_schema(WebhookSubscribeRequest),
+                response_schema=md.class_schema(WebhookSubscribeResponse),
+            )

@@ -1,5 +1,8 @@
 import logging
 from functools import partial, wraps
+from opencensus.trace.tracer import Tracer
+from opencensus.trace.samplers import ProbabilitySampler
+from opencensus.ext.azure.trace_exporter import AzureExporter
 from opencensus.ext.azure.log_exporter import AzureLogHandler
 
 from .tasks import Retry
@@ -18,6 +21,9 @@ if AZURE_APP_INSIGHTS_CONN_STRING:
         export_interval=5.0,
     )
 
+    tracer = Tracer(exporter=AzureExporter(connection_string=AZURE_APP_INSIGHTS_CONN_STRING),
+                    sampler=ProbabilitySampler(1.0))
+
     logger.addHandler(handler)
 
     def __route_extras_to_azure(f, *args, extra=None, **kwargs):
@@ -34,6 +40,7 @@ if AZURE_APP_INSIGHTS_CONN_STRING:
     debug = partial(__route_extras_to_azure, logger.debug)
     exception = partial(__route_extras_to_azure, logger.exception)
 else:
+    tracer = Tracer()
     error = logger.error
     critical = logger.critical
     warning = logger.warning
