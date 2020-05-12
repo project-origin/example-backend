@@ -31,6 +31,10 @@ spec:
           env:
             - name: SERVICE_NAME
               value: ExampleBackend
+            - name: WORKERS
+              value: {{ .Values.workers }}
+            - name: WORKER_CONNECTIONS
+              value: {{ .Values.worker-connections }}
 
 ---
 apiVersion: apps/v1
@@ -50,7 +54,7 @@ spec:
       containers:
         - name: example-backend-beat-container
           image: projectorigin/example-backend:{{ .Values.tag }}
-          args: ["pipenv", "run", "beat"]
+          args: ["./entrypoint.beat.sh"]
           envFrom:
             - configMapRef:
                 name: namespace-config
@@ -84,7 +88,7 @@ spec:
       containers:
         - name: example-backend-worker-container
           image: projectorigin/example-backend:{{ .Values.tag }}
-          args: ["pipenv", "run", "worker"]
+          args: ["./entrypoint.worker.sh"]
 
           envFrom:
             - configMapRef:
@@ -99,4 +103,6 @@ spec:
                 name: example-backend-db-secret
           env:
             - name: SERVICE_NAME
-              value: GRIS
+              value: ExampleBackendWorker
+            - name: CONCURRENCY
+              value: {{ .Values.concurrency }}
