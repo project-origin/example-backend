@@ -45,6 +45,9 @@ def start_consume_back_in_time_pipeline(user, begin_from, begin_to):
 
 @celery_app.task(
     name='consume_back_in_time.consume_back_in_time',
+    autoretry_for=(Exception,),
+    retry_backoff=2,
+    max_retries=5,
 )
 @logger.wrap_task(
     pipeline='consume_back_in_time',

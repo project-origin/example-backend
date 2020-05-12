@@ -26,7 +26,13 @@ def start_handle_ggo_received_pipeline(ggo, user):
         .apply_async()
 
 
-@celery_app.task(bind=True, name='handle_ggo_received')
+@celery_app.task(
+    bind=True,
+    name='handle_ggo_received',
+    autoretry_for=(Exception,),
+    retry_backoff=2,
+    max_retries=5,
+)
 @logger.wrap_task(
     title='Handling GGO received',
     pipeline='handle_ggo_received',

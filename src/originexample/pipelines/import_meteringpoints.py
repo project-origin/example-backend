@@ -26,7 +26,12 @@ def start_import_meteringpoints(user):
         .apply_async()
 
 
-@celery_app.task(name='import_meteringpoints.import_meteringpoints_and_insert_to_db')
+@celery_app.task(
+    name='import_meteringpoints.import_meteringpoints_and_insert_to_db',
+    autoretry_for=(Exception,),
+    retry_backoff=2,
+    max_retries=5,
+)
 @logger.wrap_task(
     title='Importing meteringpoints from DataHub',
     pipeline='import_meteringpoints',
