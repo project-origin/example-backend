@@ -52,6 +52,7 @@ def start_consume_back_in_time_pipeline(user, begin_from, begin_to):
 @logger.wrap_task(
     pipeline='consume_back_in_time',
     task='consume_back_in_time',
+    title='Consume Back in time',
 )
 @inject_session
 def consume_back_in_time(subject, begin_from, begin_to, session):

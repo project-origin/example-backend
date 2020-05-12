@@ -64,23 +64,3 @@ def handle_ggo_received(task, subject, ggo_json, session):
             raise task.retry()
 
         controller.consume_ggo(user, ggo, session)
-
-        # request = ComposeGgoRequest(address=ggo.address)
-        # consumers = list(provider.get_consumers(receiving_user, ggo, session))
-        # remaining_amount = ggo.amount
-        #
-        # for consumer in takewhile(lambda _: remaining_amount > 0, consumers):
-        #     desired_amount = consumer.get_desired_amount(ggo)
-        #     assigned_amount = min(remaining_amount, desired_amount)
-        #     remaining_amount -= assigned_amount
-        #
-        #     if assigned_amount:
-        #         consumer.consume(request, ggo, assigned_amount)
-        #
-        # if remaining_amount < ggo.amount:
-        #     logger.info('Composing a new GGO split', extra={
-        #         'subject': subject,
-        #         'address': ggo.address,
-        #         'begin': str(ggo.begin),
-        #     })
-        #     service.compose(receiving_user.access_token, request)
