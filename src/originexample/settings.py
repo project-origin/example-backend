@@ -68,6 +68,7 @@ HYDRA_WANTED_SCOPES = (
     'offline',
     'profile',
     'email',
+    'disclosure',
     'meteringpoints.read',
     'measurements.read',
     'ggo.read',
