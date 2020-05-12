@@ -86,14 +86,13 @@ class AccountService(object):
         :param GetGgoListRequest request:
         :rtype: GetGgoListResponse
         """
-        with logger.tracer.span('AccountService.GetGgoList'):
-            return self.invoke(
-                token=token,
-                path='/ggo',
-                request=request,
-                request_schema=md.class_schema(GetGgoListRequest),
-                response_schema=md.class_schema(GetGgoListResponse),
-            )
+        return self.invoke(
+            token=token,
+            path='/ggo',
+            request=request,
+            request_schema=md.class_schema(GetGgoListRequest),
+            response_schema=md.class_schema(GetGgoListResponse),
+        )
 
     def get_ggo_summary(self, token, request):
         """
@@ -101,14 +100,13 @@ class AccountService(object):
         :param GetGgoSummaryRequest request:
         :rtype: GetGgoSummaryResponse
         """
-        with logger.tracer.span('AccountService.GetGgoSummary'):
-            return self.invoke(
-                token=token,
-                path='/ggo/summary',
-                request=request,
-                request_schema=md.class_schema(GetGgoSummaryRequest),
-                response_schema=md.class_schema(GetGgoSummaryResponse),
-            )
+        return self.invoke(
+            token=token,
+            path='/ggo/summary',
+            request=request,
+            request_schema=md.class_schema(GetGgoSummaryRequest),
+            response_schema=md.class_schema(GetGgoSummaryResponse),
+        )
 
     def compose(self, token, request):
         """
@@ -116,14 +114,13 @@ class AccountService(object):
         :param ComposeGgoRequest request:
         :rtype: ComposeGgoResponse
         """
-        with logger.tracer.span('AccountService.GgoCompose'):
-            return self.invoke(
-                token=token,
-                path='/compose',
-                request=request,
-                request_schema=md.class_schema(ComposeGgoRequest),
-                response_schema=md.class_schema(ComposeGgoResponse),
-            )
+        return self.invoke(
+            token=token,
+            path='/compose',
+            request=request,
+            request_schema=md.class_schema(ComposeGgoRequest),
+            response_schema=md.class_schema(ComposeGgoResponse),
+        )
 
     def get_transfer_summary(self, token, request):
         """
@@ -131,14 +128,13 @@ class AccountService(object):
         :param GetTransferSummaryRequest request:
         :rtype: GetTransferSummaryResponse
         """
-        with logger.tracer.span('AccountService.GetTransferSummary'):
-            return self.invoke(
-                token=token,
-                path='/transfer/summary',
-                request=request,
-                request_schema=md.class_schema(GetTransferSummaryRequest),
-                response_schema=md.class_schema(GetTransferSummaryResponse),
-            )
+        return self.invoke(
+            token=token,
+            path='/transfer/summary',
+            request=request,
+            request_schema=md.class_schema(GetTransferSummaryRequest),
+            response_schema=md.class_schema(GetTransferSummaryResponse),
+        )
 
     def get_transferred_amount(self, token, request):
         """
@@ -146,14 +142,13 @@ class AccountService(object):
         :param GetTransferredAmountRequest request:
         :rtype: GetTransferredAmountResponse
         """
-        with logger.tracer.span('AccountService.GetTransferredAmount'):
-            return self.invoke(
-                token=token,
-                path='/transfer/get-transferred-amount',
-                request=request,
-                request_schema=md.class_schema(GetTransferredAmountRequest),
-                response_schema=md.class_schema(GetTransferredAmountResponse),
-            )
+        return self.invoke(
+            token=token,
+            path='/transfer/get-transferred-amount',
+            request=request,
+            request_schema=md.class_schema(GetTransferredAmountRequest),
+            response_schema=md.class_schema(GetTransferredAmountResponse),
+        )
 
     def get_retired_amount(self, token, request):
         """
@@ -161,14 +156,13 @@ class AccountService(object):
         :param GetRetiredAmountRequest request:
         :rtype: GetRetiredAmountResponse
         """
-        with logger.tracer.span('AccountService.GetRetiredAmount'):
-            return self.invoke(
-                token=token,
-                path='/retire/get-retired-amount',
-                request=request,
-                request_schema=md.class_schema(GetRetiredAmountRequest),
-                response_schema=md.class_schema(GetRetiredAmountResponse),
-            )
+        return self.invoke(
+            token=token,
+            path='/retire/get-retired-amount',
+            request=request,
+            request_schema=md.class_schema(GetRetiredAmountRequest),
+            response_schema=md.class_schema(GetRetiredAmountResponse),
+        )
 
     def webhook_on_ggo_received_subscribe(self, token):
         """
@@ -177,11 +171,10 @@ class AccountService(object):
         """
         url = f'{PROJECT_URL}/webhook/on-ggo-received'
 
-        with logger.tracer.span('AccountService.SubscribeOnGgoReceivedWebhook'):
-            return self.invoke(
-                token=token,
-                path='/webhook/on-ggo-received/subscribe',
-                request=WebhookSubscribeRequest(url=url),
-                request_schema=md.class_schema(WebhookSubscribeRequest),
-                response_schema=md.class_schema(WebhookSubscribeResponse),
-            )
+        return self.invoke(
+            token=token,
+            path='/webhook/on-ggo-received/subscribe',
+            request=WebhookSubscribeRequest(url=url),
+            request_schema=md.class_schema(WebhookSubscribeRequest),
+            response_schema=md.class_schema(WebhookSubscribeResponse),
+        )
