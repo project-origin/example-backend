@@ -50,6 +50,7 @@ class MappedUser:
     """
     sub: str = field(metadata=dict(data_key='id'))
     name: str
+    email: str
     has_performed_onboarding: bool = field(metadata=dict(data_key='hasPerformedOnboarding'))
 
 

@@ -38,6 +38,10 @@ Name | Description | Example
 **Database:** | |
 `DATABASE_URI` | Database connection string for SQLAlchemy | `postgresql://scott:tiger@localhost/mydatabase`
 `DATABASE_CONN_POLL_SIZE` | Connection pool size per container | `10`
+**E-mail:** | |
+`EMAIL_TO_ADDRESS` | SendGrid API key | `support@energinet.dk`
+`EMAIL_PREFIX` | SendGrid API key | `eloverblik - `
+`SENDGRID_API_KEY` | SendGrid API key | `foobar`
 **Runtime:** | |
 `WORKERS` | Number of Gunicorn threads to run for the web API | `3`
 `WORKER_CONNECTIONS` | Number of gevent greenthreads to run for each Gunicorn thread | `100`

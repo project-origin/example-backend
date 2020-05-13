@@ -4,6 +4,7 @@ from .commodities import controllers as commodities
 from .facilities import controllers as facilities
 from .agreements import controllers as agreements
 from .disclosures import controllers as disclosures
+from .support import controllers as support
 
 
 urls = (
@@ -53,5 +54,8 @@ urls = (
     # Webhooks
     ('/webhook/on-ggo-received', consuming.OnGgoReceivedWebhook()),
     ('/webhook/on-meteringpoints-available', facilities.OnMeteringPointsAvailableWebhook()),
+
+    # Misc
+    ('/support/submit-support-enquiry', support.SubmitSupportEnquiry()),
 
 )
