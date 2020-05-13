@@ -297,7 +297,9 @@ class GetProfile(Controller):
             .filter(User.id == user.id) \
             .update({
                 'email': id_token['email'],
-                'name': id_token['company'],
+                'phone': id_token['phone'],
+                'name': id_token['name'],
+                'company': id_token['company'],
                 'access_token': token['access_token'],
                 'refresh_token': token['refresh_token'],
                 'token_expire': datetime
@@ -306,7 +308,9 @@ class GetProfile(Controller):
             })
 
         user.email = id_token['email']
-        user.name = id_token['company']
+        user.phone = id_token['phone']
+        user.name = id_token['name']
+        user.company = id_token['company']
 
         return GetProfileResponse(
             success=True,

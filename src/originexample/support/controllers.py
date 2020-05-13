@@ -19,6 +19,7 @@ from .models import (
 SUPPORT_ENQUIRY_EMAIL_TEMPLATE = """Support enquiry sent from ElOverblik.dk:
 ------------------------------------------------------------------------------
 Sender: %(name)s <%(email)s>
+Company: %(company)s
 Phone: %(phone)s
 User ID: %(sub)s
 ------------------------------------------------------------------------------
@@ -44,6 +45,7 @@ class SubmitSupportEnquiry(Controller):
             'sub': user.sub,
             'email': request.email,
             'name': user.name,
+            'company': user.company,
             'phone': request.phone,
             'message': request.message,
         }
