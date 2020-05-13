@@ -9,10 +9,9 @@ TODO Describe the project here
 
 Name | Description | Example
 :--- | :--- | :--- |
+`SERVICE_NAME` | Name of this service | `ExampleBackend`
 `DEBUG` | Whether or not to enable debugging mode (off by default) | `0` or `1`
 `SECRET` | Application secret for misc. operations | `foobar`
-`DATABASE_URI` | Database connection string for SQLAlchemy | `postgresql://scott:tiger@localhost/mydatabase`
-`DATABASE_CONN_POLL_SIZE` | Connection pool size per container | `10`
 `CORS_ORIGINS` | Allowed CORS origins | `http://www.example.com`
 **URLs:** | |
 `PROJECT_URL` | Public URL to this service without trailing slash | `https://examplebackend.projectorigin.dk`
@@ -20,6 +19,7 @@ Name | Description | Example
 `DATAHUB_SERVICE_URL` | Public URL to DataHubService without trailing slash | `https://datahub.projectorigin.dk`
 `ACCOUNT_SERVICE_URL` | Public URL to AccountService without trailing slash | `https://account.projectorigin.dk`
 `ACCOUNT_SERVICE_LOGIN_URL` | Public URL to AccountService login endpoint | `https://account.projectorigin.dk/auth/login`
+`IDENTITY_SERVICE_EDIT_PROFILE_URL` | Public URL to IdentityService edit profile endpoint | `https://identity.projectorigin.dk/edit-profile`
 **Authentication:** | |
 `HYDRA_URL` | URL to Hydra without trailing slash | `https://auth.projectorigin.dk`
 `HYDRA_INTROSPECT_URL` | URL to Hydra Introspect without trailing slash | `https://authintrospect.projectorigin.dk`
@@ -35,6 +35,17 @@ Name | Description | Example
 `REDIS_BACKEND_DB` | Redis database for task results (unique for this service) | `2`
 **Logging:** | |
 `AZURE_APP_INSIGHTS_CONN_STRING` | Azure Application Insight connection string (optional) | `InstrumentationKey=19440978-19a8-4d07-9a99-b7a31d99f313`
+**Database:** | |
+`DATABASE_URI` | Database connection string for SQLAlchemy | `postgresql://scott:tiger@localhost/mydatabase`
+`DATABASE_CONN_POLL_SIZE` | Connection pool size per container | `10`
+**E-mail:** | |
+`EMAIL_TO_ADDRESS` | SendGrid API key | `support@energinet.dk`
+`EMAIL_PREFIX` | SendGrid API key | `eloverblik - `
+`SENDGRID_API_KEY` | SendGrid API key | `foobar`
+**Runtime:** | |
+`WORKERS` | Number of Gunicorn threads to run for the web API | `3`
+`WORKER_CONNECTIONS` | Number of gevent greenthreads to run for each Gunicorn thread | `100`
+`CONCURRENCY` | Number of gevent greenthreads to execute asynchronous tasks | `100`
 
 
 # Building container image

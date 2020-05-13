@@ -50,7 +50,7 @@ class Controller(object):
                 mimetype='application/json',
                 response=json.dumps({
                     'success': False,
-                    'message': e.description,
+                    'errors': e.description,
                 }),
             )
 

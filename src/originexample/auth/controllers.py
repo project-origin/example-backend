@@ -2,6 +2,8 @@ import marshmallow_dataclass as md
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
+from flask import make_response
+
 from originexample import logger
 from originexample.db import atomic, inject_session
 from originexample.http import Controller, redirect, BadRequest
@@ -9,8 +11,10 @@ from originexample.services.datahub import DataHubService
 from originexample.services.account import AccountService
 from originexample.cache import redis
 from originexample.settings import (
+    PROJECT_URL,
     FRONTEND_URL,
     ACCOUNT_SERVICE_LOGIN_URL,
+    IDENTITY_SERVICE_EDIT_PROFILE_URL,
 )
 
 from .queries import UserQuery
@@ -33,7 +37,11 @@ backend = AuthBackend()
 
 class Login(Controller):
     """
-    TODO
+    Redirects the user to IdentityService login URL, which
+    contains a unique "login challenge" identifying the user.
+
+    Saves the provided "return_url" to redis cache, so it's available when
+    the client is redirected back to the LoginCallback endpoint (below).
     """
     METHOD = 'GET'
 
@@ -44,9 +52,14 @@ class Login(Controller):
         :param LoginRequest request:
         :rtype: flask.Response
         """
+        if request.return_url:
+            return_url = request.return_url
+        else:
+            return_url = FRONTEND_URL
+
         login_url, state = backend.register_login_state()
 
-        redis.set(state, request.return_url, ex=3600)
+        redis.set(state, return_url, ex=3600)
 
         return redirect(login_url, code=303)
 
@@ -137,6 +150,7 @@ class LoginCallback(Controller):
         user = User(
             sub=id_token['sub'],
             name=id_token['company'],
+            email=id_token['email'],
             access_token=token['access_token'],
             refresh_token=token['refresh_token'],
             token_expire=expires,
@@ -160,6 +174,37 @@ class LoginCallback(Controller):
         """
         return redirect(f'{return_url}?success=0', code=303)
 
+
+class EditProfile(Controller):
+    """
+    Redirects the user to IdentityService edit profile URL
+    """
+    METHOD = 'GET'
+
+    def handle_request(self):
+        """
+        :rtype: flask.Response
+        """
+        return_url = f'{PROJECT_URL}/auth/edit-profile/callback'
+        url = f'{IDENTITY_SERVICE_EDIT_PROFILE_URL}?return_url={return_url}'
+        return redirect(url, code=303)
+
+
+class EditProfileCallback(Controller):
+    """
+    Callback endpoint for when then user has completed editing his profile.
+    Redirects to the login endpoint, which forces the IdentityService
+    to refresh the user's id_token.
+    """
+    METHOD = 'GET'
+
+    def handle_request(self):
+        """
+        :rtype: flask.Response
+        """
+        return redirect('/auth/login', code=303)
+
+
 class Logout(Controller):
     """
     TODO
@@ -170,8 +215,9 @@ class Logout(Controller):
         """
         :rtype: flask.Response
         """
-        
-        return redirect(backend.get_logout_url(), code=303)
+        response = make_response(redirect(backend.get_logout_url(), code=303))
+        response.delete_cookie('SID', domain=urlparse(FRONTEND_URL).netloc)
+        return response
 
 
 class Error(Controller):
@@ -208,13 +254,19 @@ class GetOnboardingUrl(Controller):
     service = DataHubService()
 
     @requires_login
-    def handle_request(self, user):
+    @atomic
+    def handle_request(self, user, session):
         """
         :param User user:
+        :param Session session:
         :rtype: GetOnboardingUrlResponse
         """
         response = self.service.get_onboarding_url(
             user.access_token, FRONTEND_URL)
+
+        session.query(User) \
+            .filter(User.id == user.id) \
+            .update({'has_performed_onboarding': True})
 
         return GetOnboardingUrlResponse(
             success=True,
@@ -224,18 +276,42 @@ class GetOnboardingUrl(Controller):
 
 class GetProfile(Controller):
     """
-    TODO
+    Refreshes user's profile data along with tokens,
+    and returns the User profile.
     """
     Response = md.class_schema(GetProfileResponse)
 
     @requires_login
-    @inject_session
+    @atomic
     def handle_request(self, user, session):
         """
         :param User user:
         :param Session session:
         :rtype: GetProfileResponse
         """
+        token = backend.refresh_token(user.refresh_token)
+        id_token = backend.get_id_token(token)
+
+        # Update user profile and tokens
+        session.query(User) \
+            .filter(User.id == user.id) \
+            .update({
+                'email': id_token['email'],
+                'phone': id_token['phone'],
+                'name': id_token['name'],
+                'company': id_token['company'],
+                'access_token': token['access_token'],
+                'refresh_token': token['refresh_token'],
+                'token_expire': datetime
+                    .fromtimestamp(token['expires_at'])
+                    .replace(tzinfo=timezone.utc),
+            })
+
+        user.email = id_token['email']
+        user.phone = id_token['phone']
+        user.name = id_token['name']
+        user.company = id_token['company']
+
         return GetProfileResponse(
             success=True,
             user=user,

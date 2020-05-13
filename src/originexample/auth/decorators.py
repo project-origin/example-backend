@@ -7,7 +7,6 @@ from originexample.settings import TOKEN_HEADER
 
 from .models import User
 from .queries import UserQuery
-from .backend import AuthBackend
 
 
 def inject_token(func):
@@ -64,13 +63,3 @@ def _get_user(token, session):
             return UserQuery(session) \
                 .has_sub(sub.decode()) \
                 .one_or_none()
-
-    # backend = AuthBackend()
-    # payload = backend.decode_token(token)
-    #
-    # if not backend.verify_payload(payload):
-    #     return None
-    #
-    # return session.query(User) \
-    #     .filter(User.oid == payload['oid']) \
-    #     .one_or_none()

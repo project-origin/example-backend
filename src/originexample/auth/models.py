@@ -22,6 +22,9 @@ class User(ModelBase):
 
     # Name / Company name
     name = sa.Column(sa.String(), nullable=False)
+    company = sa.Column(sa.String())
+    email = sa.Column(sa.String())
+    phone = sa.Column(sa.String())
 
     # Subject ID / Account number
     sub = sa.Column(sa.String(), index=True, unique=True, nullable=False)
@@ -49,6 +52,9 @@ class MappedUser:
     """
     sub: str = field(metadata=dict(data_key='id'))
     name: str
+    company: str
+    email: str
+    phone: str
     has_performed_onboarding: bool = field(metadata=dict(data_key='hasPerformedOnboarding'))
 
 
@@ -59,9 +65,7 @@ class MappedUser:
 class LoginRequest:
     class Meta:
         unknown = EXCLUDE
-    return_url: str = field(metadata=dict(data_key='returnUrl'))
-
-
+    return_url: str = field(default=None, metadata=dict(data_key='returnUrl'))
 
 
 # -- Error request and response --------------------------------------------

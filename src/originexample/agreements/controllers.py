@@ -1,13 +1,18 @@
+import csv
+import marshmallow_dataclass as md
+from io import StringIO
 from datetime import datetime, timedelta
 from functools import partial
-import marshmallow_dataclass as md
+
+from flask import make_response
 
 from originexample import logger
 from originexample.auth import User, UserQuery, requires_login
 from originexample.db import inject_session, atomic
 from originexample.http import Controller
-from originexample.facilities import Facility, FacilityQuery
+from originexample.facilities import Facility, FacilityQuery, get_technology
 from originexample.common import DateTimeRange, DataSet
+from originexample.pipelines import start_consume_back_in_time_pipeline
 from originexample.services.account import (
     AccountService,
     SummaryResolution,
@@ -37,7 +42,24 @@ from .models import (
     GetAgreementDetailsRequest,
     GetAgreementDetailsResponse,
 )
-from ..pipelines import start_consume_back_in_time_pipeline
+
+
+account = AccountService()
+
+
+def get_resolution(delta):
+    """
+    :param timedelta delta:
+    :rtype: SummaryResolution
+    """
+    if delta.days >= (365 * 3):
+        return SummaryResolution.YEAR
+    elif delta.days >= 60:
+        return SummaryResolution.MONTH
+    elif delta.days >= 3:
+        return SummaryResolution.DAY
+    else:
+        return SummaryResolution.HOUR
 
 
 class AbstractAgreementController(Controller):
@@ -177,8 +199,6 @@ class GetAgreementSummary(AbstractAgreementController):
     Request = md.class_schema(GetAgreementSummaryRequest)
     Response = md.class_schema(GetAgreementSummaryResponse)
 
-    service = AccountService()
-
     @requires_login
     @inject_session
     def handle_request(self, request, user, session):
@@ -191,7 +211,7 @@ class GetAgreementSummary(AbstractAgreementController):
         agreement = None
 
         if request.date_range:
-            resolution = self.get_resolution(request.date_range.delta)
+            resolution = get_resolution(request.date_range.delta)
         else:
             resolution = SummaryResolution.MONTH
 
@@ -222,20 +242,6 @@ class GetAgreementSummary(AbstractAgreementController):
             ggos=ggos,
         )
 
-    def get_resolution(self, delta):
-        """
-        :param timedelta delta:
-        :rtype: SummaryResolution
-        """
-        if delta.days >= (365 * 3):
-            return SummaryResolution.YEAR
-        elif delta.days >= 60:
-            return SummaryResolution.MONTH
-        elif delta.days >= 3:
-            return SummaryResolution.DAY
-        else:
-            return SummaryResolution.HOUR
-
     def get_agreement_summary(self, request, token, resolution, direction=None, reference=None):
         """
         :param GetMeasurementsRequest request:
@@ -257,7 +263,7 @@ class GetAgreementSummary(AbstractAgreementController):
             begin_range = None
             fill = False
 
-        response = self.service.get_transfer_summary(token, GetTransferSummaryRequest(
+        response = account.get_transfer_summary(token, GetTransferSummaryRequest(
             direction=direction,
             resolution=resolution,
             grouping=grouping,
@@ -527,3 +533,143 @@ class CountPendingProposals(Controller):
             success=True,
             count=count,
         )
+
+
+# -- CSV EXPORTING -----------------------------------------------------------
+
+
+class ExportGgoSummaryCSV(Controller):
+    """
+    Exports a CSV document with the following columns:
+
+    Type | Technology Code | Fuel Code | Technology | Begin | Amount
+
+    Where "Type" is either ISSUED or RETIRED.
+    """
+    Request = md.class_schema(GetAgreementSummaryRequest)
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param GetAgreementSummaryRequest request:
+        :param User user:
+        :rtype: flask.Response
+        """
+        begin_range = DateTimeRange.from_date_range(request.date_range)
+        resolution = get_resolution(begin_range.delta)
+
+        if request.public_id:
+            reference = [request.public_id]
+        else:
+            reference = None
+
+        inbound, inbound_labels = self.get_transfer_summary(
+            token=user.access_token,
+            resolution=resolution,
+            direction=TransferDirection.INBOUND,
+            filters=TransferFilters(
+                begin_range=begin_range,
+                reference=reference,
+            )
+        )
+
+        outbound, outbound_labels = self.get_transfer_summary(
+            token=user.access_token,
+            resolution=resolution,
+            direction=TransferDirection.OUTBOUND,
+            filters=TransferFilters(
+                begin_range=begin_range,
+                reference=reference,
+            )
+        )
+
+        # -- Write CSV -------------------------------------------------------
+
+        csv_file = StringIO()
+        csv_writer = csv.writer(
+            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+        # Headers
+        csv_writer.writerow([
+            'Type',
+            'TechnologyCode',
+            'FuelCode',
+            'Technology',
+            'Begin',
+            'Amount',
+        ])
+
+        # Issued GGOs
+        for summary_group in inbound:
+            technology_code, fuel_code = summary_group.group
+
+            for label, amount in zip(inbound_labels, summary_group.values):
+                csv_writer.writerow([
+                    'INBOUND',
+                    technology_code,
+                    fuel_code,
+                    get_technology(technology_code, fuel_code),
+                    label,
+                    amount,
+                ])
+
+        # Retired GGOs
+        for summary_group in outbound:
+            technology_code, fuel_code = summary_group.group
+
+            for label, amount in zip(outbound_labels, summary_group.values):
+                csv_writer.writerow([
+                    'OUTBOUND',
+                    technology_code,
+                    fuel_code,
+                    get_technology(technology_code, fuel_code),
+                    label,
+                    amount,
+                ])
+
+        # -- HTTP response ---------------------------------------------------
+
+        response = make_response(csv_file.getvalue())
+        response.headers["Content-Disposition"] = 'attachment; filename=transfer-ggo-summary.csv'
+        response.headers["Content-type"] = 'text/csv'
+
+        return response
+
+    @inject_session
+    def get_facilities(self, user, filters, session):
+        """
+        :param User user:
+        :param FacilityFilters filters:
+        :param Session session:
+        :rtype: list[Facility]
+        """
+        query = FacilityQuery(session) \
+            .belongs_to(user)
+
+        if filters is not None:
+            query = query.apply_filters(filters)
+
+        return query.all()
+
+    def get_transfer_summary(self, token, resolution, direction, filters):
+        """
+        :param str token:
+        :param SummaryResolution resolution:
+        :param TransferDirection direction:
+        :param TransferFilters filters:
+        :rtype: list[SummaryGroup]
+        """
+        request = GetTransferSummaryRequest(
+            resolution=resolution,
+            fill=True,
+            filters=filters,
+            direction=direction,
+            grouping=[
+                SummaryGrouping.TECHNOLOGY_CODE,
+                SummaryGrouping.FUEL_CODE,
+            ],
+        )
+
+        response = account.get_transfer_summary(token, request)
+
+        return response.groups, response.labels

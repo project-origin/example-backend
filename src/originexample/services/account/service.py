@@ -2,6 +2,7 @@ import requests
 import marshmallow_dataclass as md
 
 from originexample import logger
+from originexample.http import Unauthorized
 from originexample.settings import (
     PROJECT_URL,
     ACCOUNT_SERVICE_URL,
@@ -63,7 +64,9 @@ class AccountService(object):
             })
             raise
 
-        if response.status_code != 200:
+        if response.status_code == 401:
+            raise Unauthorized
+        elif response.status_code != 200:
             logger.error(f'Invoking AccountService resulted in a status != 200', extra={
                 'url': url,
                 'verify_ssl': verify_ssl,
@@ -104,20 +107,6 @@ class AccountService(object):
             request_schema=md.class_schema(GetGgoSummaryRequest),
             response_schema=md.class_schema(GetGgoSummaryResponse),
         )
-
-    # def transfer(self, token, request):
-    #     """
-    #     :param str token:
-    #     :param TransferGgoRequest request:
-    #     :rtype: TransferGgoResponse
-    #     """
-    #     return self.invoke(
-    #         token=token,
-    #         path='/transfer',
-    #         request=request,
-    #         request_schema=md.class_schema(TransferGgoRequest),
-    #         response_schema=md.class_schema(TransferGgoResponse),
-    #     )
 
     def compose(self, token, request):
         """
@@ -189,33 +178,3 @@ class AccountService(object):
             request_schema=md.class_schema(WebhookSubscribeRequest),
             response_schema=md.class_schema(WebhookSubscribeResponse),
         )
-
-    # def retire(self, request):
-    #     """
-    #     :param RetireGgoRequest request:
-    #     :rtype: RetireGgoResponse
-    #     """
-    #     return self.invoke(
-    #         path='/retire',
-    #         request=request,
-    #         request_schema=md.class_schema(RetireGgoRequest),
-    #         response_schema=md.class_schema(RetireGgoResponse),
-    #     )
-    #
-    # def transfer(self):
-    #     """
-    #     /transfer
-    #     """
-    #     pass
-    #
-    # def get_transactions(self):
-    #     """
-    #     /transfer/transactions
-    #     """
-    #     pass
-    #
-    # def get_transaction_summary(self):
-    #     """
-    #     /transfer/transactions/summary
-    #     """
-    #     pass

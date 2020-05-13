@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from marshmallow import validate
 from sqlalchemy.orm import relationship
 from uuid import uuid4
 from enum import Enum
@@ -184,8 +185,8 @@ class GetAgreementSummaryResponse:
 @dataclass
 class SubmitAgreementProposalRequest:
     direction: AgreementDirection = field(metadata=dict(by_value=True))
-    reference: str
-    counterpart_id: str = field(metadata=dict(data_key='counterpartId', validate=user_public_id_exists))
+    reference: str = field(metadata=dict(validate=validate.Length(min=1)))
+    counterpart_id: str = field(metadata=dict(data_key='counterpartId', validate=(validate.Length(min=1), user_public_id_exists)))
     amount: int
     unit: Unit
     date: DateRange

@@ -59,8 +59,8 @@ class GetGgoDistributionsResponse:
 @dataclass
 class GetMeasurementsRequest:
     date_range: DateRange = field(metadata=dict(data_key='dateRange'))
-    measurement_type: MeasurementType = field(metadata=dict(data_key='measurementType', by_value=True))
     filters: FacilityFilters = field(default=None)
+    measurement_type: MeasurementType = field(default=None, metadata=dict(data_key='measurementType', by_value=True))
 
 
 @dataclass

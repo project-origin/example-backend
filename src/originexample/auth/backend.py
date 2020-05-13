@@ -2,6 +2,7 @@ import requests
 from authlib.jose import jwt
 from authlib.integrations.requests_client import OAuth2Session
 
+from originexample.cache import redis
 from originexample.settings import (
     DEBUG,
     LOGIN_CALLBACK_URL,
@@ -58,7 +59,7 @@ class AuthBackend(object):
     def refresh_token(self, refresh_token):
         """
         :param str refresh_token:
-        :rtype:
+        :rtype: OAuth2Token
         """
         return self.client.refresh_token(
             url=HYDRA_TOKEN_ENDPOINT,
@@ -82,8 +83,14 @@ class AuthBackend(object):
 
         :rtype: str
         """
-        jwks_response = requests.get(url=HYDRA_WELLKNOWN_ENDPOINT, verify=not DEBUG)
-        return jwks_response.content.decode()
+        jwks = redis.get('HYDRA_JWKS')
+
+        if jwks is None:
+            jwks_response = requests.get(url=HYDRA_WELLKNOWN_ENDPOINT, verify=not DEBUG)
+            jwks = jwks_response.content
+            redis.set('HYDRA_JWKS', jwks.decode(), ex=3600)
+
+        return jwks.decode()
 
     def get_logout_url(self):
         """

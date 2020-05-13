@@ -8,10 +8,10 @@ DEBUG = os.environ.get('DEBUG') in ('1', 't', 'true', 'yes')
 # -- Project -----------------------------------------------------------------
 
 PROJECT_NAME = 'Example Backend'
+SERVICE_NAME = os.environ['SERVICE_NAME']
 SECRET = os.environ['SECRET']
 PROJECT_URL = os.environ['PROJECT_URL']
-HTTPS_PROJECT_URL = PROJECT_URL.replace('http:', 'https:')
-LOGIN_CALLBACK_URL = f'{HTTPS_PROJECT_URL}/auth/login/callback'
+LOGIN_CALLBACK_URL = f'{PROJECT_URL}/auth/login/callback'
 CORS_ORIGINS = os.environ['CORS_ORIGINS']
 
 
@@ -44,6 +44,7 @@ FRONTEND_URL = os.environ['FRONTEND_URL']
 DATAHUB_SERVICE_URL = os.environ['DATAHUB_SERVICE_URL']
 ACCOUNT_SERVICE_URL = os.environ['ACCOUNT_SERVICE_URL']
 ACCOUNT_SERVICE_LOGIN_URL = os.environ['ACCOUNT_SERVICE_LOGIN_URL']
+IDENTITY_SERVICE_EDIT_PROFILE_URL = os.environ['IDENTITY_SERVICE_EDIT_PROFILE_URL']
 
 
 # -- Auth/tokens -------------------------------------------------------------
@@ -67,6 +68,7 @@ HYDRA_WANTED_SCOPES = (
     'offline',
     'profile',
     'email',
+    'disclosure',
     'meteringpoints.read',
     'measurements.read',
     'ggo.read',
@@ -94,4 +96,9 @@ REDIS_BACKEND_URL = '%s/%d' % (REDIS_URL, REDIS_BACKEND_DB)
 
 # -- Misc --------------------------------------------------------------------
 
-AZURE_APP_INSIGHTS_CONN_STRING = os.environ.get('AZURE_APP_INSIGHTS_CONN_STRING')
+AZURE_APP_INSIGHTS_CONN_STRING = os.environ.get(
+    'AZURE_APP_INSIGHTS_CONN_STRING')
+
+EMAIL_TO_ADDRESS = os.environ['EMAIL_TO_ADDRESS']
+EMAIL_PREFIX = os.environ['EMAIL_PREFIX']
+SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']

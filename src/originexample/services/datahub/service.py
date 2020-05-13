@@ -2,6 +2,7 @@ import requests
 import marshmallow_dataclass as md
 
 from originexample import logger
+from originexample.http import Unauthorized
 from originexample.settings import (
     PROJECT_URL,
     DATAHUB_SERVICE_URL,
@@ -21,6 +22,13 @@ from .models import (
     GetOnboadingUrlRequest,
     WebhookSubscribeRequest,
     WebhookSubscribeResponse,
+    GetDisclosureRequest,
+    GetDisclosureResponse,
+    GetDisclosureListResponse,
+    CreateDisclosureRequest,
+    CreateDisclosureResponse,
+    DeleteDisclosureRequest,
+    DeleteDisclosureResponse,
 )
 
 
@@ -28,13 +36,13 @@ class DataHubService(object):
     """
     An interface to the Project Origin DataHub Service API.
     """
-    def invoke(self, token, path, response_schema, request=None, request_schema=None):
+    def invoke(self, path, response_schema, request=None, request_schema=None, token=None):
         """
-        :param str token:
         :param str path:
         :param obj request:
         :param Schema request_schema:
         :param Schema response_schema:
+        :param str token:
         :rtype obj:
         """
         url = '%s%s' % (DATAHUB_SERVICE_URL, path)
@@ -49,7 +57,7 @@ class DataHubService(object):
             response = requests.post(
                 url=url,
                 json=body,
-                headers={TOKEN_HEADER: f'Bearer {token}'},
+                headers={TOKEN_HEADER: f'Bearer {token}'} if token else None,
                 verify=verify_ssl,
             )
         except:
@@ -60,7 +68,9 @@ class DataHubService(object):
             })
             raise
 
-        if response.status_code != 200:
+        if response.status_code == 401:
+            raise Unauthorized
+        elif response.status_code != 200:
             logger.error(f'Invoking DataHubService resulted in a status != 200', extra={
                 'url': url,
                 'verify_ssl': verify_ssl,
@@ -153,6 +163,58 @@ class DataHubService(object):
             request=request,
             request_schema=md.class_schema(GetMeasurementSummaryRequest),
             response_schema=md.class_schema(GetMeasurementSummaryResponse),
+        )
+
+    def get_disclosure(self, request):
+        """
+        :param GetDisclosureRequest request:
+        :rtype: GetDisclosureResponse
+        """
+        with logger.tracer.span('DataHubService.GetDisclosure'):
+            return self.invoke(
+                path='/disclosure',
+                request=request,
+                request_schema=md.class_schema(GetDisclosureRequest),
+                response_schema=md.class_schema(GetDisclosureResponse),
+            )
+
+    def get_disclosure_list(self, token):
+        """
+        :param str token:
+        :rtype: GetDisclosureListResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/disclosure/list',
+            response_schema=md.class_schema(GetDisclosureListResponse),
+        )
+
+    def create_disclosure(self, token, request):
+        """
+        :param str token:
+        :param CreateDisclosureRequest request:
+        :rtype: CreateDisclosureResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/disclosure/create',
+            request=request,
+            request_schema=md.class_schema(CreateDisclosureRequest),
+            response_schema=md.class_schema(CreateDisclosureResponse),
+        )
+
+    def delete_disclosure(self, token, request):
+        """
+        :param str token:
+        :param DeleteDisclosureRequest request:
+        :rtype: DeleteDisclosureResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/disclosure/delete',
+            request=request,
+            request_schema=md.class_schema(DeleteDisclosureRequest),
+            response_schema=md.class_schema(DeleteDisclosureResponse),
         )
 
     def webhook_on_meteringpoints_available_subscribe(self, token):
