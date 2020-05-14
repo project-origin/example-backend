@@ -8,6 +8,7 @@ from originexample.settings import (
     DATAHUB_SERVICE_URL,
     TOKEN_HEADER,
     DEBUG,
+    WEBHOOK_SECRET,
 )
 
 from .models import (
@@ -227,7 +228,7 @@ class DataHubService(object):
         return self.invoke(
             token=token,
             path='/webhook/on-meteringpoints-available/subscribe',
-            request=WebhookSubscribeRequest(url=url),
+            request=WebhookSubscribeRequest(url=url, secret=WEBHOOK_SECRET),
             request_schema=md.class_schema(WebhookSubscribeRequest),
             response_schema=md.class_schema(WebhookSubscribeResponse),
         )

@@ -47,6 +47,12 @@ ACCOUNT_SERVICE_LOGIN_URL = os.environ['ACCOUNT_SERVICE_LOGIN_URL']
 IDENTITY_SERVICE_EDIT_PROFILE_URL = os.environ['IDENTITY_SERVICE_EDIT_PROFILE_URL']
 
 
+# -- webhook -----------------------------------------------------------------
+
+HMAC_HEADER = 'x-hub-signature'
+WEBHOOK_SECRET = os.environ['WEBHOOK_SECRET']
+
+
 # -- Auth/tokens -------------------------------------------------------------
 
 TOKEN_HEADER = 'Authorization'

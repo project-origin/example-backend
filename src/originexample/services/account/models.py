@@ -205,6 +205,7 @@ class GetRetiredAmountResponse:
 @dataclass
 class WebhookSubscribeRequest:
     url: str
+    secret: str
 
 
 @dataclass

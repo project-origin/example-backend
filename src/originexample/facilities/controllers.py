@@ -3,6 +3,7 @@ import marshmallow_dataclass as md
 from originexample.http import Controller
 from originexample.auth import User, requires_login, UserQuery
 from originexample.db import inject_session, atomic
+from originexample.webhooks import validate_hmac
 from originexample.pipelines import (
     start_import_meteringpoints,
     start_consume_back_in_time_pipeline,
@@ -206,6 +207,7 @@ class OnMeteringPointsAvailableWebhook(Controller):
     """
     Request = md.class_schema(OnMeteringPointsAvailableWebhookRequest)
 
+    @validate_hmac
     @inject_session
     def handle_request(self, request, session):
         """

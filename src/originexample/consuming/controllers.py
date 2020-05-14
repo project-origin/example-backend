@@ -5,6 +5,7 @@ from originexample.db import inject_session
 from originexample.http import Controller
 from originexample.auth import UserQuery
 from originexample.pipelines import start_handle_ggo_received_pipeline
+from originexample.webhooks import validate_hmac
 
 from .models import OnGgoReceivedWebhookRequest
 
@@ -15,6 +16,7 @@ class OnGgoReceivedWebhook(Controller):
     """
     Request = md.class_schema(OnGgoReceivedWebhookRequest)
 
+    @validate_hmac
     @inject_session
     def handle_request(self, request, session):
         """
