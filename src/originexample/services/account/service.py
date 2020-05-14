@@ -8,6 +8,7 @@ from originexample.settings import (
     ACCOUNT_SERVICE_URL,
     TOKEN_HEADER,
     DEBUG,
+    WEBHOOK_SECRET,
 )
 
 from .models import (
