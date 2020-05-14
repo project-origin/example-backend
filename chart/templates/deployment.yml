@@ -28,6 +28,8 @@ spec:
                 name: example-backend-hydra-secret
             - secretRef:
                 name: example-backend-db-secret
+            - secretRef:
+                name: example-backend-webhook-secret
           env:
             - name: SERVICE_NAME
               value: ExampleBackend
