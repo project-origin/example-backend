@@ -187,10 +187,10 @@ class GetDisclosureRequest:
 @dataclass
 class GetDisclosureResponse:
     success: bool
-    state: DisclosureState = field(metadata=dict(by_value=True))
     labels: List[str]
     data: List[DisclosureDataSeries]
     message: str = field(default=None)
+    state: DisclosureState = field(default=None, metadata=dict(by_value=True))
 
 
 # -- GetDisclosureList request and response ----------------------------------
