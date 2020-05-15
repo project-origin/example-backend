@@ -416,7 +416,7 @@ class ExportGgoSummaryCSV(Controller):
 
         csv_file = StringIO()
         csv_writer = csv.writer(
-            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         # Headers
         csv_writer.writerow([
@@ -545,7 +545,7 @@ class ExportGgoListCSV(Controller):
 
         csv_file = StringIO()
         csv_writer = csv.writer(
-            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         # Headers
         csv_writer.writerow([
@@ -667,7 +667,7 @@ class ExportMeasurementsCSV(Controller):
 
         csv_file = StringIO()
         csv_writer = csv.writer(
-            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         # Headers
         csv_writer.writerow([
