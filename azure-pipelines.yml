@@ -1,6 +1,11 @@
 trigger:
-- master
-- develop
+  branches:
+    include:
+    - master
+    - develop
+
+# no PR triggers
+pr: none
 
 resources:
 - repo: self
