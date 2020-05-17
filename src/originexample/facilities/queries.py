@@ -56,24 +56,6 @@ class FacilityQuery(object):
 
         return FacilityQuery(self.session, q)
 
-    def has_gsrn(self, gsrn):
-        """
-        :param str gsrn:
-        :rtype: FacilityQuery
-        """
-        return FacilityQuery(self.session, self.q.filter(
-            Facility.gsrn == gsrn,
-        ))
-
-    def has_any_gsrn(self, gsrn):
-        """
-        :param list[str] gsrn:
-        :rtype: FacilityQuery
-        """
-        return FacilityQuery(self.session, self.q.filter(
-            Facility.gsrn.in_(gsrn),
-        ))
-
     def has_public_id(self, public_id):
         """
         :param str public_id:
@@ -90,6 +72,24 @@ class FacilityQuery(object):
         """
         return FacilityQuery(self.session, self.q.filter(
             Facility.public_id.in_(public_ids),
+        ))
+
+    def has_gsrn(self, gsrn):
+        """
+        :param str gsrn:
+        :rtype: FacilityQuery
+        """
+        return FacilityQuery(self.session, self.q.filter(
+            Facility.gsrn == gsrn,
+        ))
+
+    def has_any_gsrn(self, gsrn):
+        """
+        :param list[str] gsrn:
+        :rtype: FacilityQuery
+        """
+        return FacilityQuery(self.session, self.q.filter(
+            Facility.gsrn.in_(gsrn),
         ))
 
     def belongs_to(self, user):
@@ -141,6 +141,7 @@ class FacilityQuery(object):
         """
         return FacilityQuery(self.session, self.q.filter(
             Facility.sector == ggo.sector,
+            Facility.facility_type == FacilityType.CONSUMPTION,
         ))
 
     def get_distinct_sectors(self):
