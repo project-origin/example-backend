@@ -30,18 +30,6 @@ user2 = User(
     token_expire=datetime(2030, 1, 1, 0, 0, 0),
 )
 
-user3 = User(
-    id=3,
-    sub='7169e62d-e349-4af2-9587-6027a4e86cf9',
-    name='User 3',
-    company='Company 3',
-    email='user3@email.com',
-    phone='33333333',
-    access_token='access_token',
-    refresh_token='access_token',
-    token_expire=datetime(2030, 1, 1, 0, 0, 0),
-)
-
 
 # -- TEST CASES --------------------------------------------------------------
 
@@ -143,4 +131,3 @@ def test__TradeAgreement__is_outbound_from__returns_correct_value(state, expecte
 
     # Assert
     assert agreement.is_pending() == expected_is_pending
-
