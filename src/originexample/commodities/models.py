@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 
 from originexample.common import DateRange, DataSet
 from originexample.services import MeasurementType
+from originexample.services.account import GgoCategory
 from originexample.facilities import FacilityFilters
 
 
@@ -51,6 +52,22 @@ class GetGgoDistributionsRequest:
 class GetGgoDistributionsResponse:
     success: bool
     distributions: GgoDistributionBundle
+
+
+# -- GetGgoSummary request and response --------------------------------------
+
+
+@dataclass
+class GetGgoSummaryRequest:
+    category: GgoCategory = field(metadata=dict(by_value=True))
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+
+
+@dataclass
+class GetGgoSummaryResponse:
+    success: bool
+    labels: List[str] = field(default_factory=list)
+    ggos: List[DataSet] = field(default_factory=list)
 
 
 # -- GetMeasurements request and response ------------------------------------
