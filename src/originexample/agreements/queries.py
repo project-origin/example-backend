@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy import func, text
 
 from originexample.auth import User
 from originexample.services.account import Ggo
@@ -129,6 +130,16 @@ class AgreementQuery(object):
             TradeAgreement.state == AgreementState.CANCELLED,
         ))
 
+    def is_cancelled_recently(self):
+        """
+        TODO unittest this
+
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.cancelled >= text("NOW() - INTERVAL '14 DAYS'"),
+        ))
+
     def is_declined(self):
         """
         TODO unittest this
@@ -137,6 +148,16 @@ class AgreementQuery(object):
         """
         return AgreementQuery(self.session, self.q.filter(
             TradeAgreement.state == AgreementState.DECLINED,
+        ))
+
+    def is_declined_recently(self):
+        """
+        TODO unittest this
+
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.declined >= text("NOW() - INTERVAL '14 DAYS'"),
         ))
 
     def is_active(self):

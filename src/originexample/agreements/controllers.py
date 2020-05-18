@@ -156,15 +156,19 @@ class GetAgreementList(AbstractAgreementController):
             .all()
 
         # Formerly accepted agreements which has now been cancelled
+        # TODO remove after 14 days
         cancelled = AgreementQuery(session) \
             .belongs_to(user) \
             .is_cancelled() \
+            .is_cancelled_recently() \
             .all()
 
         # Formerly proposed agreements which has now been declined
+        # TODO remove after 14 days
         declined = AgreementQuery(session) \
             .belongs_to(user) \
             .is_declined() \
+            .is_declined_recently() \
             .all()
 
         map_agreement = partial(self.map_agreement_for, user)
@@ -465,19 +469,13 @@ class RespondToProposal(Controller):
                 begin_to=datetime.fromordinal(agreement.date_to.toordinal()) + timedelta(days=1),
             )
         else:
-            self.decline_proposal(agreement)
+            agreement.decline_proposal()
             logger.info(f'User declined to TradeAgreement proposal', extra={
                 'subject': user.sub,
                 'agreement_id': agreement.id,
             })
 
         return RespondToProposalResponse(success=True)
-
-    def decline_proposal(self, agreement):
-        """
-        :param TradeAgreement agreement:
-        """
-        agreement.state = AgreementState.DECLINED
 
     def accept_proposal(self, request, agreement, user, session):
         """

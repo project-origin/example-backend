@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy import func
 from marshmallow import validate, EXCLUDE
 from sqlalchemy.orm import relationship
 from uuid import uuid4
@@ -52,7 +53,8 @@ class TradeAgreement(ModelBase):
     id = sa.Column(sa.Integer(), primary_key=True, autoincrement=True, index=True)
     public_id = sa.Column(sa.String(), index=True, nullable=False)
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now())
-    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now())
+    declined = sa.Column(sa.DateTime(timezone=True))
+    cancelled = sa.Column(sa.DateTime(timezone=True))
 
     # Involved parties (users)
     user_proposed_id = sa.Column(sa.Integer(), sa.ForeignKey('auth_user.id'), index=True, nullable=False)
@@ -108,8 +110,14 @@ class TradeAgreement(ModelBase):
         """
         return self.state == AgreementState.PENDING
 
+
+    def decline_proposal(self):
+        self.state = AgreementState.DECLINED
+        self.declined = func.now()
+
     def cancel(self):
         self.state = AgreementState.CANCELLED
+        self.cancelled = func.now()
 
 # ----------------------------------------------------------------------------
 
