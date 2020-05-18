@@ -31,6 +31,7 @@ urls = (
     ('/agreements', agreements.GetAgreementList()),
     ('/agreements/details', agreements.GetAgreementDetails()),
     ('/agreements/summary', agreements.GetAgreementSummary()),
+    ('/agreements/cancel', agreements.CancelAgreement()),
     ('/agreements/propose', agreements.SubmitAgreementProposal()),
     ('/agreements/propose/respond', agreements.RespondToProposal()),
     ('/agreements/propose/withdraw', agreements.WithdrawProposal()),

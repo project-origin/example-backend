@@ -3,7 +3,6 @@ import marshmallow_dataclass as md
 from io import StringIO
 from datetime import datetime, timedelta
 from functools import partial
-
 from flask import make_response
 
 from originexample import logger
@@ -41,6 +40,7 @@ from .models import (
     WithdrawProposalResponse,
     GetAgreementDetailsRequest,
     GetAgreementDetailsResponse,
+    CancelAgreementRequest,
 )
 
 
@@ -84,6 +84,7 @@ class AbstractAgreementController(Controller):
         return MappedTradeAgreement(
             direction=AgreementDirection.INBOUND,
             public_id=agreement.public_id,
+            counterpart_id=agreement.user_from.sub,
             counterpart=agreement.user_from.name,
             date_from=agreement.date_from,
             date_to=agreement.date_to,
@@ -101,6 +102,7 @@ class AbstractAgreementController(Controller):
         return MappedTradeAgreement(
             direction=AgreementDirection.OUTBOUND,
             public_id=agreement.public_id,
+            counterpart_id=agreement.user_to.sub,
             counterpart=agreement.user_to.name,
             date_from=agreement.date_from,
             date_to=agreement.date_to,
@@ -285,6 +287,33 @@ class GetAgreementSummary(AbstractAgreementController):
             ))
 
         return datasets, response.labels
+
+
+class CancelAgreement(Controller):
+    """
+    TODO
+    """
+    Request = md.class_schema(CancelAgreementRequest)
+
+    @requires_login
+    @atomic
+    def handle_request(self, request, user, session):
+        """
+        :param CancelAgreementRequest request:
+        :param User user:
+        :param Session session:
+        :rtype: bool
+        """
+        agreement = AgreementQuery(session) \
+            .has_public_id(request.public_id) \
+            .belongs_to(user) \
+            .one_or_none()
+
+        if agreement:
+            agreement.cancel()
+            return True
+        else:
+            return False
 
 
 # -- Proposals ---------------------------------------------------------------

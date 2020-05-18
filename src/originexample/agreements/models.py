@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from marshmallow import validate
+from marshmallow import validate, EXCLUDE
 from sqlalchemy.orm import relationship
 from uuid import uuid4
 from enum import Enum
@@ -107,6 +107,8 @@ class TradeAgreement(ModelBase):
         """
         return self.state == AgreementState.PENDING
 
+    def cancel(self):
+        self.state = AgreementState.CANCELLED
 
 # ----------------------------------------------------------------------------
 
@@ -123,6 +125,7 @@ def on_before_creating_task(mapper, connect, agreement):
 @dataclass
 class MappedTradeAgreement:
     direction: AgreementDirection = field(metadata=dict(by_value=True))
+    counterpart_id: str = field(metadata=dict(data_key='counterpartId'))
     counterpart: str
     public_id: str = field(metadata=dict(data_key='id'))
     date_from: str = field(metadata=dict(data_key='dateFrom'))
@@ -179,6 +182,14 @@ class GetAgreementSummaryResponse:
     ggos: List[DataSet]
 
 
+# -- CancelAgreement request and response ------------------------------------
+
+
+@dataclass
+class CancelAgreementRequest:
+    public_id: str = field(metadata=dict(data_key='id'))
+
+
 # -- SubmitAgreementProposal request and response ----------------------------
 
 
@@ -192,6 +203,9 @@ class SubmitAgreementProposalRequest:
     date: DateRange
     technology: str = field(default=None)
     facility_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds'))
+
+    class Meta:
+        unknown = EXCLUDE
 
 
 @dataclass
