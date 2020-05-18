@@ -52,6 +52,7 @@ class TradeAgreement(ModelBase):
     id = sa.Column(sa.Integer(), primary_key=True, autoincrement=True, index=True)
     public_id = sa.Column(sa.String(), index=True, nullable=False)
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now())
+    created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now())
 
     # Involved parties (users)
     user_proposed_id = sa.Column(sa.Integer(), sa.ForeignKey('auth_user.id'), index=True, nullable=False)
@@ -124,6 +125,7 @@ def on_before_creating_task(mapper, connect, agreement):
 
 @dataclass
 class MappedTradeAgreement:
+    state: AgreementState = field(metadata=dict(by_value=True))
     direction: AgreementDirection = field(metadata=dict(by_value=True))
     counterpart_id: str = field(metadata=dict(data_key='counterpartId'))
     counterpart: str
@@ -149,6 +151,8 @@ class GetAgreementListResponse:
     sent: List[MappedTradeAgreement] = field(default_factory=list)
     inbound: List[MappedTradeAgreement] = field(default_factory=list)
     outbound: List[MappedTradeAgreement] = field(default_factory=list)
+    cancelled: List[MappedTradeAgreement] = field(default_factory=list)
+    declined: List[MappedTradeAgreement] = field(default_factory=list)
 
 
 # -- GetAgreementSummary request and response --------------------------------

@@ -83,6 +83,7 @@ class AbstractAgreementController(Controller):
         """
         return MappedTradeAgreement(
             direction=AgreementDirection.INBOUND,
+            state=agreement.state,
             public_id=agreement.public_id,
             counterpart_id=agreement.user_from.sub,
             counterpart=agreement.user_from.name,
@@ -101,6 +102,7 @@ class AbstractAgreementController(Controller):
         """
         return MappedTradeAgreement(
             direction=AgreementDirection.OUTBOUND,
+            state=agreement.state,
             public_id=agreement.public_id,
             counterpart_id=agreement.user_to.sub,
             counterpart=agreement.user_to.name,
@@ -153,6 +155,18 @@ class GetAgreementList(AbstractAgreementController):
             .is_accepted() \
             .all()
 
+        # Formerly accepted agreements which has now been cancelled
+        cancelled = AgreementQuery(session) \
+            .belongs_to(user) \
+            .is_cancelled() \
+            .all()
+
+        # Formerly proposed agreements which has now been declined
+        declined = AgreementQuery(session) \
+            .belongs_to(user) \
+            .is_declined() \
+            .all()
+
         map_agreement = partial(self.map_agreement_for, user)
 
         return GetAgreementListResponse(
@@ -161,6 +175,8 @@ class GetAgreementList(AbstractAgreementController):
             sent=list(map(map_agreement, sent)),
             inbound=list(map(map_agreement, inbound)),
             outbound=list(map(map_agreement, outbound)),
+            cancelled=list(map(map_agreement, cancelled)),
+            declined=list(map(map_agreement, declined)),
         )
 
 

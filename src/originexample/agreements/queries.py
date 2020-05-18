@@ -119,6 +119,26 @@ class AgreementQuery(object):
             TradeAgreement.state == AgreementState.ACCEPTED,
         ))
 
+    def is_cancelled(self):
+        """
+        TODO unittest this
+
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.state == AgreementState.CANCELLED,
+        ))
+
+    def is_declined(self):
+        """
+        TODO unittest this
+
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.state == AgreementState.DECLINED,
+        ))
+
     def is_active(self):
         """
         TODO Filter on dates?
