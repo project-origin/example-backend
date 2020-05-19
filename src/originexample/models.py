@@ -1,6 +1,7 @@
 from .auth import User
 from .facilities import Facility, FacilityTag
 from .agreements import TradeAgreement
+from .technology import Technology
 
 
 # This is a list of all database models to include when creating
@@ -11,4 +12,5 @@ VERSIONED_DB_MODELS = (
     Facility,
     FacilityTag,
     TradeAgreement,
+    Technology,
 )

@@ -1,8 +1,11 @@
 import sqlalchemy as sa
+from sqlalchemy import func
 
 from originexample.auth import User
 
 from .models import Facility, FacilityFilters, FacilityTag, FacilityType
+from ..settings import UNKNOWN_TECHNOLOGY_LABEL
+from ..technology import Technology
 
 
 class FacilityQuery(object):
@@ -42,7 +45,7 @@ class FacilityQuery(object):
         if filters.tags:
             q = q.filter(*[Facility.tags.any(tag=t) for t in filters.tags])
         if filters.technology:
-            q = q.filter(Facility.technology == filters.technology)
+            q = q.filter(Facility.technology.has(Technology.technology == filters.technology))
         if filters.text:
             # SQLite doesn't support full text search, so this is the second
             # best solution (the only?) which enables us to perform both
@@ -157,13 +160,6 @@ class FacilityQuery(object):
         """
         return [row[0] for row in self.session.query(
             self.q.subquery().c.gsrn.distinct())]
-
-    def get_distinct_technologies(self):
-        """
-        :rtype: list[str]
-        """
-        return [row[0] for row in self.session.query(
-            self.q.subquery().c.technology.distinct())]
 
     def get_distinct_tags(self):
         """

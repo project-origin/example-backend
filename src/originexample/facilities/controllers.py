@@ -4,6 +4,7 @@ from originexample.http import Controller
 from originexample.auth import User, requires_login, UserQuery
 from originexample.db import inject_session, atomic
 from originexample.webhooks import validate_hmac
+from originexample.technology import Technology
 from originexample.pipelines import (
     start_import_meteringpoints,
     start_consume_back_in_time_pipeline,
@@ -126,8 +127,15 @@ class GetFilteringOptions(Controller):
             success=True,
             sectors=facilities.get_distinct_sectors(),
             tags=facilities.get_distinct_tags(),
-            technologies=facilities.get_distinct_technologies(),
+            technologies=self.get_technologies(session),
         )
+
+    def get_technologies(self, session):
+        """
+        rtype: list[str]
+        """
+        query = session.query(Technology.technology.distinct())
+        return [row[0] for row in query.all()]
 
 
 class SetRetiringPriority(Controller):

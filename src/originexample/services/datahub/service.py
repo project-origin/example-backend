@@ -30,6 +30,7 @@ from .models import (
     CreateDisclosureResponse,
     DeleteDisclosureRequest,
     DeleteDisclosureResponse,
+    GetTechnologiesResponse,
 )
 
 
@@ -164,6 +165,15 @@ class DataHubService(object):
             request=request,
             request_schema=md.class_schema(GetMeasurementSummaryRequest),
             response_schema=md.class_schema(GetMeasurementSummaryResponse),
+        )
+
+    def get_technologies(self):
+        """
+        :rtype: GetTechnologiesResponse
+        """
+        return self.invoke(
+            path='/technologies',
+            response_schema=md.class_schema(GetTechnologiesResponse),
         )
 
     def get_disclosure(self, request):

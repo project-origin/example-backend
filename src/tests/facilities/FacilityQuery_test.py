@@ -71,15 +71,14 @@ def seed_facility_test_data(session):
 
     # Input for combinations
     users = (user1, user2, user3)
-    technologies = ('Wind', 'Hydro')
     sectors = ('DK1', 'DK2')
     types = (FacilityType.PRODUCTION, FacilityType.CONSUMPTION)
     should_retire = (True, False)
 
     # Combinations
-    combinations = product(users, technologies, sectors, types, should_retire)
+    combinations = product(users, sectors, types, should_retire)
 
-    for i, (usr, tech, sector, typ, ret) in enumerate(combinations, start=1):
+    for i, (usr, sector, typ, ret) in enumerate(combinations, start=1):
         if ret:
             retiring_priority = session \
                 .query(Facility) \
@@ -95,7 +94,6 @@ def seed_facility_test_data(session):
             user=usr,
             gsrn=f'GSRN{i}',
             facility_type=typ,
-            technology=tech,
             technology_code='technology_code',
             fuel_code='fuel_code',
             sector=sector,
