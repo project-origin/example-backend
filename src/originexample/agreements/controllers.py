@@ -296,15 +296,7 @@ class GetAgreementSummary(AbstractAgreementController):
             ),
         ))
 
-        datasets = []
-
-        summarized = summarize_technologies(response.groups, grouping)
-
-        for technology, summary_group in summarized:
-            datasets.append(DataSet(
-                label=technology,
-                values=summary_group.values,
-            ))
+        datasets = [DataSet(g.group[0], g.values) for g in response.groups]
 
         return datasets, response.labels
 
