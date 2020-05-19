@@ -13,6 +13,13 @@ from ..shared_models import MeasurementType, SummaryResolution, SummaryGroup
 # -- Common ------------------------------------------------------------------
 
 
+@dataclass
+class Technology:
+    technology: str
+    technology_code: str = field(metadata=dict(data_key='technologyCode'))
+    fuel_code: str = field(metadata=dict(data_key='fuelCode'))
+
+
 class MeteringPointType(Enum):
     PRODUCTION = 'production'
     CONSUMPTION = 'consumption'
@@ -187,10 +194,10 @@ class GetDisclosureRequest:
 @dataclass
 class GetDisclosureResponse:
     success: bool
-    state: DisclosureState = field(metadata=dict(by_value=True))
     labels: List[str]
     data: List[DisclosureDataSeries]
     message: str = field(default=None)
+    state: DisclosureState = field(default=None, metadata=dict(by_value=True))
 
 
 # -- GetDisclosureList request and response ----------------------------------
@@ -237,12 +244,22 @@ class DeleteDisclosureResponse:
     message: str = field(default=None)
 
 
+# -- GetTechnologies request and response ------------------------------------
+
+
+@dataclass
+class GetTechnologiesResponse:
+    success: bool
+    technologies: List[Technology] = field(default_factory=list)
+
+
 # -- Webhooks request and response -------------------------------------------
 
 
 @dataclass
 class WebhookSubscribeRequest:
     url: str
+    secret: str
 
 
 @dataclass

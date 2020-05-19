@@ -9,6 +9,8 @@ from sqlalchemy.orm import relationship
 from dataclasses import dataclass, field
 
 from originexample.db import ModelBase
+from originexample.technology import Technology
+from originexample.settings import UNKNOWN_TECHNOLOGY_LABEL
 
 
 class FacilityType:  # TODO Enum
@@ -52,11 +54,20 @@ class Facility(ModelBase):
     # Facility data
     gsrn = sa.Column(sa.String(), index=True)
     facility_type = sa.Column(sa.String(), nullable=False)  # TODO rename to "type" to match MeteringPoint?
-    technology = sa.Column(sa.String())
     technology_code = sa.Column(sa.String())
     fuel_code = sa.Column(sa.String())
     sector = sa.Column(sa.String(), nullable=False)
     name = sa.Column(sa.String(), nullable=False)
+
+    technology = relationship(
+        'Technology',
+        lazy='joined',
+        foreign_keys=[technology_code, fuel_code],
+        primaryjoin=sa.and_(
+            technology_code == Technology.technology_code,
+            fuel_code == Technology.fuel_code,
+        ),
+     )
 
     # Address
     street_code = sa.Column(sa.String())
@@ -113,7 +124,22 @@ def on_before_creating_task(mapper, connect, facility):
 # -- Common ------------------------------------------------------------------
 
 
-FacilityTagList = NewType('FacilityTag', str, field=marshmallow.fields.Function, serialize=lambda facility: [t.tag for t in facility.tags])
+FacilityTechnology = NewType(
+    name='FacilityTechnology',
+    typ=str,
+    field=marshmallow.fields.Function,
+    serialize=lambda facility: (facility.technology.technology
+                                if facility.technology
+                                else UNKNOWN_TECHNOLOGY_LABEL),
+)
+
+
+FacilityTagList = NewType(
+    name='FacilityTag',
+    typ=str,
+    field=marshmallow.fields.Function,
+    serialize=lambda facility: [t.tag for t in facility.tags],
+)
 
 
 @dataclass
@@ -126,7 +152,7 @@ class MappedFacility:
     retiring_priority: int = field(metadata=dict(data_key='retiringPriority'))
     gsrn: str
     facility_type: str = field(metadata=dict(data_key='facilityType'))
-    technology: str
+    technology: FacilityTechnology
     technology_code: str = field(metadata=dict(data_key='technologyCode'))
     fuel_code: str = field(metadata=dict(data_key='fuelCode'))
     sector: str

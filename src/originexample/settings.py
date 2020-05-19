@@ -47,6 +47,12 @@ ACCOUNT_SERVICE_LOGIN_URL = os.environ['ACCOUNT_SERVICE_LOGIN_URL']
 IDENTITY_SERVICE_EDIT_PROFILE_URL = os.environ['IDENTITY_SERVICE_EDIT_PROFILE_URL']
 
 
+# -- webhook -----------------------------------------------------------------
+
+HMAC_HEADER = 'x-hub-signature'
+WEBHOOK_SECRET = os.environ['WEBHOOK_SECRET']
+
+
 # -- Auth/tokens -------------------------------------------------------------
 
 TOKEN_HEADER = 'Authorization'
@@ -102,3 +108,5 @@ AZURE_APP_INSIGHTS_CONN_STRING = os.environ.get(
 EMAIL_TO_ADDRESS = os.environ['EMAIL_TO_ADDRESS']
 EMAIL_PREFIX = os.environ['EMAIL_PREFIX']
 SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']
+
+UNKNOWN_TECHNOLOGY_LABEL = 'Unknown'

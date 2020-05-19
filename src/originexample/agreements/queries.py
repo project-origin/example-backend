@@ -1,7 +1,9 @@
 import sqlalchemy as sa
+from sqlalchemy import func, text
 
 from originexample.auth import User
 from originexample.services.account import Ggo
+from originexample.facilities import get_technology
 
 from .models import TradeAgreement, AgreementState
 
@@ -118,6 +120,46 @@ class AgreementQuery(object):
             TradeAgreement.state == AgreementState.ACCEPTED,
         ))
 
+    def is_cancelled(self):
+        """
+        TODO unittest this
+
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.state == AgreementState.CANCELLED,
+        ))
+
+    def is_cancelled_recently(self):
+        """
+        TODO unittest this
+
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.cancelled >= text("NOW() - INTERVAL '14 DAYS'"),
+        ))
+
+    def is_declined(self):
+        """
+        TODO unittest this
+
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.state == AgreementState.DECLINED,
+        ))
+
+    def is_declined_recently(self):
+        """
+        TODO unittest this
+
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.declined >= text("NOW() - INTERVAL '14 DAYS'"),
+        ))
+
     def is_active(self):
         """
         TODO Filter on dates?
@@ -132,4 +174,10 @@ class AgreementQuery(object):
 
         :rtype: AgreementQuery
         """
-        return self
+        technology = get_technology(ggo.technology_code, ggo.fuel_code)
+
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.date_from <= ggo.begin.date(),
+            TradeAgreement.date_to >= ggo.begin.date(),
+            (TradeAgreement.technology == None) | (TradeAgreement.technology == technology),
+        ))

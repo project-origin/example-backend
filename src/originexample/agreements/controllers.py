@@ -3,7 +3,6 @@ import marshmallow_dataclass as md
 from io import StringIO
 from datetime import datetime, timedelta
 from functools import partial
-
 from flask import make_response
 
 from originexample import logger
@@ -41,6 +40,7 @@ from .models import (
     WithdrawProposalResponse,
     GetAgreementDetailsRequest,
     GetAgreementDetailsResponse,
+    CancelAgreementRequest,
 )
 
 
@@ -83,7 +83,9 @@ class AbstractAgreementController(Controller):
         """
         return MappedTradeAgreement(
             direction=AgreementDirection.INBOUND,
+            state=agreement.state,
             public_id=agreement.public_id,
+            counterpart_id=agreement.user_from.sub,
             counterpart=agreement.user_from.name,
             date_from=agreement.date_from,
             date_to=agreement.date_to,
@@ -100,7 +102,9 @@ class AbstractAgreementController(Controller):
         """
         return MappedTradeAgreement(
             direction=AgreementDirection.OUTBOUND,
+            state=agreement.state,
             public_id=agreement.public_id,
+            counterpart_id=agreement.user_to.sub,
             counterpart=agreement.user_to.name,
             date_from=agreement.date_from,
             date_to=agreement.date_to,
@@ -151,6 +155,22 @@ class GetAgreementList(AbstractAgreementController):
             .is_accepted() \
             .all()
 
+        # Formerly accepted agreements which has now been cancelled
+        # TODO remove after 14 days
+        cancelled = AgreementQuery(session) \
+            .belongs_to(user) \
+            .is_cancelled() \
+            .is_cancelled_recently() \
+            .all()
+
+        # Formerly proposed agreements which has now been declined
+        # TODO remove after 14 days
+        declined = AgreementQuery(session) \
+            .belongs_to(user) \
+            .is_declined() \
+            .is_declined_recently() \
+            .all()
+
         map_agreement = partial(self.map_agreement_for, user)
 
         return GetAgreementListResponse(
@@ -159,6 +179,8 @@ class GetAgreementList(AbstractAgreementController):
             sent=list(map(map_agreement, sent)),
             inbound=list(map(map_agreement, inbound)),
             outbound=list(map(map_agreement, outbound)),
+            cancelled=list(map(map_agreement, cancelled)),
+            declined=list(map(map_agreement, declined)),
         )
 
 
@@ -285,6 +307,33 @@ class GetAgreementSummary(AbstractAgreementController):
             ))
 
         return datasets, response.labels
+
+
+class CancelAgreement(Controller):
+    """
+    TODO
+    """
+    Request = md.class_schema(CancelAgreementRequest)
+
+    @requires_login
+    @atomic
+    def handle_request(self, request, user, session):
+        """
+        :param CancelAgreementRequest request:
+        :param User user:
+        :param Session session:
+        :rtype: bool
+        """
+        agreement = AgreementQuery(session) \
+            .has_public_id(request.public_id) \
+            .belongs_to(user) \
+            .one_or_none()
+
+        if agreement:
+            agreement.cancel()
+            return True
+        else:
+            return False
 
 
 # -- Proposals ---------------------------------------------------------------
@@ -420,19 +469,13 @@ class RespondToProposal(Controller):
                 begin_to=datetime.fromordinal(agreement.date_to.toordinal()) + timedelta(days=1),
             )
         else:
-            self.decline_proposal(agreement)
+            agreement.decline_proposal()
             logger.info(f'User declined to TradeAgreement proposal', extra={
                 'subject': user.sub,
                 'agreement_id': agreement.id,
             })
 
         return RespondToProposalResponse(success=True)
-
-    def decline_proposal(self, agreement):
-        """
-        :param TradeAgreement agreement:
-        """
-        agreement.state = AgreementState.DECLINED
 
     def accept_proposal(self, request, agreement, user, session):
         """
@@ -587,7 +630,7 @@ class ExportGgoSummaryCSV(Controller):
 
         csv_file = StringIO()
         csv_writer = csv.writer(
-            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         # Headers
         csv_writer.writerow([

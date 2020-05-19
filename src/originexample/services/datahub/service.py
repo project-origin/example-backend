@@ -8,6 +8,7 @@ from originexample.settings import (
     DATAHUB_SERVICE_URL,
     TOKEN_HEADER,
     DEBUG,
+    WEBHOOK_SECRET,
 )
 
 from .models import (
@@ -29,6 +30,7 @@ from .models import (
     CreateDisclosureResponse,
     DeleteDisclosureRequest,
     DeleteDisclosureResponse,
+    GetTechnologiesResponse,
 )
 
 
@@ -165,6 +167,15 @@ class DataHubService(object):
             response_schema=md.class_schema(GetMeasurementSummaryResponse),
         )
 
+    def get_technologies(self):
+        """
+        :rtype: GetTechnologiesResponse
+        """
+        return self.invoke(
+            path='/technologies',
+            response_schema=md.class_schema(GetTechnologiesResponse),
+        )
+
     def get_disclosure(self, request):
         """
         :param GetDisclosureRequest request:
@@ -227,7 +238,7 @@ class DataHubService(object):
         return self.invoke(
             token=token,
             path='/webhook/on-meteringpoints-available/subscribe',
-            request=WebhookSubscribeRequest(url=url),
+            request=WebhookSubscribeRequest(url=url, secret=WEBHOOK_SECRET),
             request_schema=md.class_schema(WebhookSubscribeRequest),
             response_schema=md.class_schema(WebhookSubscribeResponse),
         )

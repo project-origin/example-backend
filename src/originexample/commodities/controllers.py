@@ -16,17 +16,20 @@ from originexample.services.datahub import (
     MeasurementFilters,
     SummaryGroup,
 )
-from originexample.services.account import (
-    AccountService,
-    GgoFilters,
-    GgoCategory,
-    SummaryGrouping,
-    summarize_technologies,
-    GetGgoSummaryRequest,
-    GetTransferSummaryRequest,
-    TransferFilters,
-    TransferDirection,
-    GetGgoListRequest, Ggo)
+from originexample.services import account as acc
+# from originexample.services.account import (
+#     AccountService,
+#     GgoFilters,
+#     GgoCategory,
+#     SummaryGrouping,
+#     summarize_technologies,
+#     GetGgoSummaryRequest,
+#     GetTransferSummaryRequest,
+#     TransferFilters,
+#     TransferDirection,
+#     GetGgoListRequest,
+#     Ggo,
+# )
 
 from .models import (
     MeasurementType,
@@ -37,11 +40,11 @@ from .models import (
     GetGgoDistributionsResponse,
     GetMeasurementsRequest,
     GetMeasurementsResponse,
-)
+    GetGgoSummaryRequest, GetGgoSummaryResponse)
 
 
-account = AccountService()
-datahub = DataHubService()
+account_service = acc.AccountService()
+datahub_service = DataHubService()
 
 
 def get_resolution(delta):
@@ -65,8 +68,6 @@ class GetGgoDistributions(Controller):
     """
     Request = md.class_schema(GetGgoDistributionsRequest)
     Response = md.class_schema(GetGgoDistributionsResponse)
-
-    service = AccountService()
 
     @requires_login
     def handle_request(self, request, user):
@@ -97,11 +98,11 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_ggo_summary,
             token,
             begin_range,
-            GgoCategory.ISSUED,
+            acc.GgoCategory.ISSUED,
         ))
 
     def get_stored(self, token, begin_range):
@@ -110,11 +111,11 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_ggo_summary,
             token,
             begin_range,
-            GgoCategory.STORED,
+            acc.GgoCategory.STORED,
         ))
 
     def get_retired(self, token, begin_range):
@@ -123,11 +124,11 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_ggo_summary,
             token,
             begin_range,
-            GgoCategory.RETIRED,
+            acc.GgoCategory.RETIRED,
         ))
 
     def get_expired(self, token, begin_range):
@@ -136,11 +137,11 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_ggo_summary,
             token,
             begin_range,
-            GgoCategory.EXPIRED,
+            acc.GgoCategory.EXPIRED,
         ))
 
     def get_inbound(self, token, begin_range):
@@ -149,11 +150,11 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_transfer_summary,
             token,
             begin_range,
-            TransferDirection.INBOUND,
+            acc.TransferDirection.INBOUND,
         ))
 
     def get_outbound(self, token, begin_range):
@@ -162,29 +163,24 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_transfer_summary,
             token,
             begin_range,
-            TransferDirection.OUTBOUND,
+            acc.TransferDirection.OUTBOUND,
         ))
 
-    def get_and_summarize_distributions(self, get_summary_groups):
+    def get_distributions(self, get_summary_groups):
         """
         :param function get_summary_groups: A function which returns a
             list of SummaryGroup objects
         :rtype: GgoDistribution
         """
-        summarized = summarize_technologies(get_summary_groups(), [
-            SummaryGrouping.TECHNOLOGY_CODE,
-            SummaryGrouping.FUEL_CODE,
-        ])
-
         distribution = GgoDistribution()
 
-        for technology, summary_group in summarized:
+        for summary_group in get_summary_groups():
             distribution.technologies.append(GgoTechnology(
-                technology=technology,
+                technology=summary_group.group[0],
                 amount=sum(summary_group.values),
             ))
 
@@ -199,17 +195,14 @@ class GetGgoDistributions(Controller):
         :param GgoCategory category:
         :rtype: List[SummaryGroup]
         """
-        response = self.service.get_ggo_summary(token, GetGgoSummaryRequest(
+        response = account_service.get_ggo_summary(token, acc.GetGgoSummaryRequest(
             resolution=SummaryResolution.ALL,
             fill=False,
-            filters=GgoFilters(
+            grouping=[acc.SummaryGrouping.TECHNOLOGY],
+            filters=acc.GgoFilters(
                 category=category,
                 begin_range=begin_range,
             ),
-            grouping=[
-                SummaryGrouping.TECHNOLOGY_CODE,
-                SummaryGrouping.FUEL_CODE,
-            ],
         ))
 
         return response.groups
@@ -223,18 +216,72 @@ class GetGgoDistributions(Controller):
         :param TransferDirection direction:
         :rtype: List[SummaryGroup]
         """
-        response = self.service.get_transfer_summary(token, GetTransferSummaryRequest(
+        response = account_service.get_transfer_summary(token, acc.GetTransferSummaryRequest(
             direction=direction,
             resolution=SummaryResolution.ALL,
             fill=False,
-            filters=TransferFilters(begin_range=begin_range),
-            grouping=[
-                SummaryGrouping.TECHNOLOGY_CODE,
-                SummaryGrouping.FUEL_CODE,
-            ],
+            grouping=[acc.SummaryGrouping.TECHNOLOGY],
+            filters=acc.TransferFilters(begin_range=begin_range),
         ))
 
         return response.groups
+
+
+class GetGgoSummary(Controller):
+    """
+    TODO
+    """
+    Request = md.class_schema(GetGgoSummaryRequest)
+    Response = md.class_schema(GetGgoSummaryResponse)
+
+    def __init__(self, category=None):
+        """
+        :param GgoCategory category:
+        """
+        self.category = category
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param GetGgoSummaryRequest request:
+        :param User user:
+        :rtype: GetGgoSummaryResponse
+        """
+        begin_range = DateTimeRange.from_date_range(request.date_range)
+        resolution = get_resolution(begin_range.delta)
+
+        ggo_filters = acc.GgoFilters(
+            begin_range=begin_range,
+            category=request.category,
+        )
+
+        ggos, labels = self.get_ggo_summary(
+            user.access_token, resolution, ggo_filters)
+
+        return GetGgoSummaryResponse(
+            success=True,
+            labels=labels,
+            ggos=ggos,
+        )
+
+    def get_ggo_summary(self, token, resolution, filters):
+        """
+        :param str token:
+        :param SummaryResolution resolution:
+        :param GgoFilters filters:
+        :rtype: (list[DataSet], list[str])
+        """
+        request = acc.GetGgoSummaryRequest(
+            filters=filters,
+            resolution=resolution,
+            grouping=[acc.SummaryGrouping.TECHNOLOGY],
+            fill=True,
+        )
+
+        response = account_service.get_ggo_summary(token, request)
+        datasets = [DataSet(g.group[0], g.values) for g in response.groups]
+
+        return datasets, response.labels
 
 
 class GetMeasurements(Controller):
@@ -260,15 +307,15 @@ class GetMeasurements(Controller):
         resolution = get_resolution(begin_range.delta)
 
         if request.measurement_type == MeasurementType.PRODUCTION:
-            ggo_filters = GgoFilters(
+            ggo_filters = acc.GgoFilters(
                 begin_range=begin_range,
-                category=GgoCategory.ISSUED,
+                category=acc.GgoCategory.ISSUED,
                 issue_gsrn=gsrn,
             )
         elif request.measurement_type == MeasurementType.CONSUMPTION:
-            ggo_filters = GgoFilters(
+            ggo_filters = acc.GgoFilters(
                 begin_range=begin_range,
-                category=GgoCategory.RETIRED,
+                category=acc.GgoCategory.RETIRED,
                 retire_gsrn=gsrn,
             )
         else:
@@ -323,7 +370,7 @@ class GetMeasurements(Controller):
             ),
         )
 
-        response = datahub.get_measurement_summary(token, request)
+        response = datahub_service.get_measurement_summary(token, request)
         label = measurement_type.value.capitalize()
 
         if response.groups:
@@ -338,27 +385,15 @@ class GetMeasurements(Controller):
         :param GgoFilters filters:
         :rtype: (list[DataSet], list[str])
         """
-        grouping = [
-            SummaryGrouping.TECHNOLOGY_CODE,
-            SummaryGrouping.FUEL_CODE,
-        ]
-
-        request = GetGgoSummaryRequest(
+        request = acc.GetGgoSummaryRequest(
             filters=filters,
             resolution=resolution,
-            grouping=grouping,
+            grouping=[acc.SummaryGrouping.TECHNOLOGY],
             fill=True,
         )
 
-        response = account.get_ggo_summary(token, request)
-        summarized = summarize_technologies(response.groups, grouping)
-        datasets = []
-
-        for technology, summary_group in summarized:
-            datasets.append(DataSet(
-                label=technology,
-                values=summary_group.values,
-            ))
+        response = account_service.get_ggo_summary(token, request)
+        datasets = [DataSet(g.group[0], g.values) for g in response.groups]
 
         return datasets, response.labels
 
@@ -395,9 +430,9 @@ class ExportGgoSummaryCSV(Controller):
         issued, issued_labels = self.get_ggo_summary(
             token=user.access_token,
             resolution=resolution,
-            filters=GgoFilters(
+            filters=acc.GgoFilters(
                 begin_range=begin_range,
-                category=GgoCategory.ISSUED,
+                category=acc.GgoCategory.ISSUED,
                 issue_gsrn=gsrn,
             ),
         )
@@ -405,9 +440,9 @@ class ExportGgoSummaryCSV(Controller):
         retired, retired_labels = self.get_ggo_summary(
             token=user.access_token,
             resolution=resolution,
-            filters=GgoFilters(
+            filters=acc.GgoFilters(
                 begin_range=begin_range,
-                category=GgoCategory.RETIRED,
+                category=acc.GgoCategory.RETIRED,
                 retire_gsrn=gsrn,
             ),
         )
@@ -416,7 +451,7 @@ class ExportGgoSummaryCSV(Controller):
 
         csv_file = StringIO()
         csv_writer = csv.writer(
-            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         # Headers
         csv_writer.writerow([
@@ -487,17 +522,17 @@ class ExportGgoSummaryCSV(Controller):
         :param GgoFilters filters:
         :rtype: list[SummaryGroup]
         """
-        request = GetGgoSummaryRequest(
+        request = acc.GetGgoSummaryRequest(
             resolution=resolution,
             fill=True,
             filters=filters,
             grouping=[
-                SummaryGrouping.TECHNOLOGY_CODE,
-                SummaryGrouping.FUEL_CODE,
+                acc.SummaryGrouping.TECHNOLOGY_CODE,
+                acc.SummaryGrouping.FUEL_CODE,
             ],
         )
 
-        response = account.get_ggo_summary(token, request)
+        response = account_service.get_ggo_summary(token, request)
 
         return response.groups, response.labels
 
@@ -529,15 +564,15 @@ class ExportGgoListCSV(Controller):
 
         begin_range = DateTimeRange.from_date_range(request.date_range)
 
-        issued = self.get_ggos(user.access_token, GgoFilters(
+        issued = self.get_ggos(user.access_token, acc.GgoFilters(
             begin_range=begin_range,
-            category=GgoCategory.ISSUED,
+            category=acc.GgoCategory.ISSUED,
             issue_gsrn=gsrn,
         ))
 
-        retired = self.get_ggos(user.access_token, GgoFilters(
+        retired = self.get_ggos(user.access_token, acc.GgoFilters(
             begin_range=begin_range,
-            category=GgoCategory.RETIRED,
+            category=acc.GgoCategory.RETIRED,
             retire_gsrn=gsrn,
         ))
 
@@ -545,7 +580,7 @@ class ExportGgoListCSV(Controller):
 
         csv_file = StringIO()
         csv_writer = csv.writer(
-            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         # Headers
         csv_writer.writerow([
@@ -619,7 +654,7 @@ class ExportGgoListCSV(Controller):
         limit = 100
 
         while 1:
-            response = account.get_ggo_list(token, GetGgoListRequest(
+            response = account_service.get_ggo_list(token, acc.GetGgoListRequest(
                 offset=offset,
                 limit=limit,
                 filters=filters,
@@ -667,7 +702,7 @@ class ExportMeasurementsCSV(Controller):
 
         csv_file = StringIO()
         csv_writer = csv.writer(
-            csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_file, delimiter=';', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
         # Headers
         csv_writer.writerow([
@@ -734,6 +769,6 @@ class ExportMeasurementsCSV(Controller):
             ),
         )
 
-        response = datahub.get_measurement_summary(token, request)
+        response = datahub_service.get_measurement_summary(token, request)
 
         return response.groups, response.labels

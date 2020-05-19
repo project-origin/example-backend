@@ -40,7 +40,7 @@ class GetDisclosure(Controller):
         datahub_response = datahub.get_disclosure(datahub_request)
 
         response = GetDisclosureResponse(
-            success=True,
+            success=datahub_response.success,
             labels=datahub_response.labels,
             data=[],
         )

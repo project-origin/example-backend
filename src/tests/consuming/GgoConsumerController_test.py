@@ -1,11 +1,10 @@
-import pytest
 from unittest.mock import Mock, patch, ANY
 
 from originexample.consuming.consumers import GgoConsumerController
 
 
 @patch('originexample.consuming.consumers.account')
-def test__GgoConsumerController__consume_nothing__should_not_invoke_AccountService(account):
+def test__GgoConsumerController__consume_ggo__consume_nothing__should_not_invoke_AccountService(account):
 
     uut = GgoConsumerController()
     uut.get_consumers = Mock()
@@ -23,7 +22,7 @@ def test__GgoConsumerController__consume_nothing__should_not_invoke_AccountServi
 
 
 @patch('originexample.consuming.consumers.account')
-def test__GgoConsumerController__consume_more_than_available__should_only_consume_available_amount(account):
+def test__GgoConsumerController__consume_ggo__consume_more_than_available__should_only_consume_available_amount(account):
 
     def __mock_consumer(amount):
         mock = Mock()

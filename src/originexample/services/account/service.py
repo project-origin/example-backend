@@ -8,6 +8,7 @@ from originexample.settings import (
     ACCOUNT_SERVICE_URL,
     TOKEN_HEADER,
     DEBUG,
+    WEBHOOK_SECRET,
 )
 
 from .models import (
@@ -174,7 +175,7 @@ class AccountService(object):
         return self.invoke(
             token=token,
             path='/webhook/on-ggo-received/subscribe',
-            request=WebhookSubscribeRequest(url=url),
+            request=WebhookSubscribeRequest(url=url, secret=WEBHOOK_SECRET),
             request_schema=md.class_schema(WebhookSubscribeRequest),
             response_schema=md.class_schema(WebhookSubscribeResponse),
         )

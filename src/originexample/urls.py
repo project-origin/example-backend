@@ -31,6 +31,7 @@ urls = (
     ('/agreements', agreements.GetAgreementList()),
     ('/agreements/details', agreements.GetAgreementDetails()),
     ('/agreements/summary', agreements.GetAgreementSummary()),
+    ('/agreements/cancel', agreements.CancelAgreement()),
     ('/agreements/propose', agreements.SubmitAgreementProposal()),
     ('/agreements/propose/respond', agreements.RespondToProposal()),
     ('/agreements/propose/withdraw', agreements.WithdrawProposal()),
@@ -39,6 +40,7 @@ urls = (
 
     # GGOs
     ('/commodities/distributions', commodities.GetGgoDistributions()),
+    ('/commodities/ggo-summary', commodities.GetGgoSummary()),
     ('/commodities/measurements', commodities.GetMeasurements()),
     ('/commodities/measurements/csv', commodities.ExportMeasurementsCSV()),
     ('/commodities/ggo-summary/csv', commodities.ExportGgoSummaryCSV()),
