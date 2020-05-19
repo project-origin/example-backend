@@ -98,7 +98,7 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_ggo_summary,
             token,
             begin_range,
@@ -111,7 +111,7 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_ggo_summary,
             token,
             begin_range,
@@ -124,7 +124,7 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_ggo_summary,
             token,
             begin_range,
@@ -137,7 +137,7 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_ggo_summary,
             token,
             begin_range,
@@ -150,7 +150,7 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_transfer_summary,
             token,
             begin_range,
@@ -163,29 +163,24 @@ class GetGgoDistributions(Controller):
         :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
-        return self.get_and_summarize_distributions(partial(
+        return self.get_distributions(partial(
             self.get_transfer_summary,
             token,
             begin_range,
             acc.TransferDirection.OUTBOUND,
         ))
 
-    def get_and_summarize_distributions(self, get_summary_groups):
+    def get_distributions(self, get_summary_groups):
         """
         :param function get_summary_groups: A function which returns a
             list of SummaryGroup objects
         :rtype: GgoDistribution
         """
-        summarized = acc.summarize_technologies(get_summary_groups(), [
-            acc.SummaryGrouping.TECHNOLOGY_CODE,
-            acc.SummaryGrouping.FUEL_CODE,
-        ])
-
         distribution = GgoDistribution()
 
-        for technology, summary_group in summarized:
+        for summary_group in get_summary_groups():
             distribution.technologies.append(GgoTechnology(
-                technology=technology,
+                technology=summary_group.group[0],
                 amount=sum(summary_group.values),
             ))
 
@@ -203,14 +198,11 @@ class GetGgoDistributions(Controller):
         response = account_service.get_ggo_summary(token, acc.GetGgoSummaryRequest(
             resolution=SummaryResolution.ALL,
             fill=False,
+            grouping=[acc.SummaryGrouping.TECHNOLOGY],
             filters=acc.GgoFilters(
                 category=category,
                 begin_range=begin_range,
             ),
-            grouping=[
-                acc.SummaryGrouping.TECHNOLOGY_CODE,
-                acc.SummaryGrouping.FUEL_CODE,
-            ],
         ))
 
         return response.groups
@@ -228,11 +220,8 @@ class GetGgoDistributions(Controller):
             direction=direction,
             resolution=SummaryResolution.ALL,
             fill=False,
+            grouping=[acc.SummaryGrouping.TECHNOLOGY],
             filters=acc.TransferFilters(begin_range=begin_range),
-            grouping=[
-                acc.SummaryGrouping.TECHNOLOGY_CODE,
-                acc.SummaryGrouping.FUEL_CODE,
-            ],
         ))
 
         return response.groups
@@ -282,27 +271,15 @@ class GetGgoSummary(Controller):
         :param GgoFilters filters:
         :rtype: (list[DataSet], list[str])
         """
-        grouping = [
-            acc.SummaryGrouping.TECHNOLOGY_CODE,
-            acc.SummaryGrouping.FUEL_CODE,
-        ]
-
         request = acc.GetGgoSummaryRequest(
             filters=filters,
             resolution=resolution,
-            grouping=grouping,
+            grouping=[acc.SummaryGrouping.TECHNOLOGY],
             fill=True,
         )
 
         response = account_service.get_ggo_summary(token, request)
-        summarized = acc.summarize_technologies(response.groups, grouping)
-        datasets = []
-
-        for technology, summary_group in summarized:
-            datasets.append(DataSet(
-                label=technology,
-                values=summary_group.values,
-            ))
+        datasets = [DataSet(g.group[0], g.values) for g in response.groups]
 
         return datasets, response.labels
 
@@ -408,27 +385,15 @@ class GetMeasurements(Controller):
         :param GgoFilters filters:
         :rtype: (list[DataSet], list[str])
         """
-        grouping = [
-            acc.SummaryGrouping.TECHNOLOGY_CODE,
-            acc.SummaryGrouping.FUEL_CODE,
-        ]
-
         request = acc.GetGgoSummaryRequest(
             filters=filters,
             resolution=resolution,
-            grouping=grouping,
+            grouping=[acc.SummaryGrouping.TECHNOLOGY],
             fill=True,
         )
 
         response = account_service.get_ggo_summary(token, request)
-        summarized = acc.summarize_technologies(response.groups, grouping)
-        datasets = []
-
-        for technology, summary_group in summarized:
-            datasets.append(DataSet(
-                label=technology,
-                values=summary_group.values,
-            ))
+        datasets = [DataSet(g.group[0], g.values) for g in response.groups]
 
         return datasets, response.labels
 

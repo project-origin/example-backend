@@ -97,6 +97,7 @@ class RetireRequest:
 class SummaryGrouping:
     BEGIN = 'begin'
     SECTOR = 'sector'
+    TECHNOLOGY = 'technology'
     TECHNOLOGY_CODE = 'technologyCode'
     FUEL_CODE = 'fuelCode'
 
