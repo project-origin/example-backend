@@ -636,28 +636,28 @@ class ExportGgoSummaryCSV(Controller):
 
         # Issued GGOs
         for summary_group in inbound:
-            technology_code, fuel_code = summary_group.group
+            technology, technology_code, fuel_code = summary_group.group
 
             for label, amount in zip(inbound_labels, summary_group.values):
                 csv_writer.writerow([
                     'INBOUND',
                     technology_code,
                     fuel_code,
-                    get_technology(technology_code, fuel_code),
+                    technology,
                     label,
                     amount,
                 ])
 
         # Retired GGOs
         for summary_group in outbound:
-            technology_code, fuel_code = summary_group.group
+            technology, technology_code, fuel_code = summary_group.group
 
             for label, amount in zip(outbound_labels, summary_group.values):
                 csv_writer.writerow([
                     'OUTBOUND',
                     technology_code,
                     fuel_code,
-                    get_technology(technology_code, fuel_code),
+                    technology,
                     label,
                     amount,
                 ])
@@ -700,6 +700,7 @@ class ExportGgoSummaryCSV(Controller):
             filters=filters,
             direction=direction,
             grouping=[
+                SummaryGrouping.TECHNOLOGY,
                 SummaryGrouping.TECHNOLOGY_CODE,
                 SummaryGrouping.FUEL_CODE,
             ],

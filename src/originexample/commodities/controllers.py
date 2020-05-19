@@ -465,28 +465,28 @@ class ExportGgoSummaryCSV(Controller):
 
         # Issued GGOs
         for summary_group in issued:
-            technology_code, fuel_code = summary_group.group
+            technology, technology_code, fuel_code = summary_group.group
 
             for label, amount in zip(issued_labels, summary_group.values):
                 csv_writer.writerow([
                     'ISSUED',
                     technology_code,
                     fuel_code,
-                    get_technology(technology_code, fuel_code),
+                    technology,
                     label,
                     amount,
                 ])
 
         # Retired GGOs
         for summary_group in retired:
-            technology_code, fuel_code = summary_group.group
+            technology, technology_code, fuel_code = summary_group.group
 
             for label, amount in zip(retired_labels, summary_group.values):
                 csv_writer.writerow([
                     'RETIRED',
                     technology_code,
                     fuel_code,
-                    get_technology(technology_code, fuel_code),
+                    technology,
                     label,
                     amount,
                 ])
@@ -527,6 +527,7 @@ class ExportGgoSummaryCSV(Controller):
             fill=True,
             filters=filters,
             grouping=[
+                acc.SummaryGrouping.TECHNOLOGY,
                 acc.SummaryGrouping.TECHNOLOGY_CODE,
                 acc.SummaryGrouping.FUEL_CODE,
             ],
@@ -601,7 +602,6 @@ class ExportGgoListCSV(Controller):
                 'ISSUED',
                 ggo.technology_code,
                 ggo.fuel_code,
-                get_technology(ggo.technology_code, ggo.fuel_code),
                 ggo.begin,
                 ggo.amount,
                 ggo.sector,
@@ -614,7 +614,6 @@ class ExportGgoListCSV(Controller):
                 'RETIRED',
                 ggo.technology_code,
                 ggo.fuel_code,
-                get_technology(ggo.technology_code, ggo.fuel_code),
                 ggo.begin,
                 ggo.amount,
                 ggo.sector,
