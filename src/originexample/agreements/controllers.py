@@ -273,11 +273,6 @@ class GetAgreementSummary(AbstractAgreementController):
         :param str reference:
         :rtype: (list[DataSet], list[str])
         """
-        grouping = [
-            SummaryGrouping.TECHNOLOGY_CODE,
-            SummaryGrouping.FUEL_CODE,
-        ]
-
         if request.date_range:
             begin_range = DateTimeRange.from_date_range(request.date_range)
             fill = True
@@ -288,8 +283,8 @@ class GetAgreementSummary(AbstractAgreementController):
         response = account.get_transfer_summary(token, GetTransferSummaryRequest(
             direction=direction,
             resolution=resolution,
-            grouping=grouping,
             fill=fill,
+            grouping=[SummaryGrouping.TECHNOLOGY],
             filters=TransferFilters(
                 reference=[reference] if reference else None,
                 begin_range=begin_range,
