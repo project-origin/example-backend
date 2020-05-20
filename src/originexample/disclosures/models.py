@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
+from datetime import date
 from typing import List
 
 from originexample.common import DateRange, DataSet
 from originexample.facilities import MappedFacility, FacilityFilters
-from originexample.services.datahub import Disclosure
+from originexample.services.datahub import Disclosure, SummaryResolution
 
 
 # -- GetDisclosure request and response --------------------------------------
@@ -20,11 +21,15 @@ class DisclosureDataSeries:
 @dataclass
 class GetDisclosureRequest:
     id: str
+    date_range: DateRange = field(default=None, metadata=dict(data_key='dateRange'))
 
 
 @dataclass
 class GetDisclosureResponse:
     success: bool
+    description: str
+    begin: date
+    end: date
     labels: List[str]
     data: List[DisclosureDataSeries]
 
@@ -62,6 +67,7 @@ class CreateDisclosureRequest:
     name: str
     description: str
     gsrn: List[str]
+    max_resolution: SummaryResolution = field(metadata=dict(by_value=True, data_key='maxResolution'))
     date_range: DateRange = field(metadata=dict(data_key='dateRange'))
     publicize_meteringpoints: bool = field(metadata=dict(data_key='publicizeMeteringpoints'))
     publicize_gsrn: bool = field(metadata=dict(data_key='publicizeGsrn'))

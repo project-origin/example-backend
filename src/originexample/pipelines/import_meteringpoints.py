@@ -62,19 +62,11 @@ def import_meteringpoints_and_insert_to_db(subject, session):
             else:
                 raise RuntimeError('Should NOT have happened!')
 
-            if meteringpoint.technology_code and meteringpoint.fuel_code:
-                technology = get_technology(
-                    meteringpoint.technology_code,
-                    meteringpoint.fuel_code)
-            else:
-                technology = None
-
             session.add(Facility(
                 user=user,
                 gsrn=meteringpoint.gsrn,
                 sector=meteringpoint.sector,
                 facility_type=facility_type,
-                technology=technology,
                 technology_code=meteringpoint.technology_code,
                 fuel_code=meteringpoint.fuel_code,
                 street_code=meteringpoint.street_code,
