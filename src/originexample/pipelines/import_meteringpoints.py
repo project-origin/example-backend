@@ -30,7 +30,7 @@ def start_import_meteringpoints(user):
     name='import_meteringpoints.import_meteringpoints_and_insert_to_db',
     autoretry_for=(Exception,),
     retry_backoff=2,
-    max_retries=5,
+    max_retries=11,
 )
 @logger.wrap_task(
     title='Importing meteringpoints from DataHub',
