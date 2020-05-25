@@ -9,7 +9,7 @@ from originexample import logger
 from originexample.auth import User, UserQuery, requires_login
 from originexample.db import inject_session, atomic
 from originexample.http import Controller
-from originexample.facilities import Facility, FacilityQuery, get_technology
+from originexample.facilities import Facility, FacilityQuery
 from originexample.common import DateTimeRange, DataSet
 from originexample.pipelines import start_consume_back_in_time_pipeline
 from originexample.services.account import (
@@ -19,7 +19,6 @@ from originexample.services.account import (
     TransferFilters,
     TransferDirection,
     GetTransferSummaryRequest,
-    summarize_technologies,
 )
 
 from .queries import AgreementQuery

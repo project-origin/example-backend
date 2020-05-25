@@ -5,7 +5,6 @@ from originexample.http import Controller, BadRequest
 from originexample.auth import User, requires_login
 from originexample.facilities import FacilityQuery, FacilityFilters
 from originexample.services import datahub as dh
-from originexample.services.account import summarize_technologies
 from originexample.common import DataSet
 
 from .models import (
@@ -16,7 +15,9 @@ from .models import (
     CreateDisclosureResponse,
     GetDisclosureRequest,
     GetDisclosureResponse,
-    GetDisclosureListResponse, DeleteDisclosureRequest)
+    GetDisclosureListResponse,
+    DeleteDisclosureRequest,
+)
 
 
 datahub = dh.DataHubService()
@@ -36,10 +37,17 @@ class GetDisclosure(Controller):
         :param Session session:
         :rtype: GetDisclosureResponse
         """
-        datahub_request = dh.GetDisclosureRequest(id=request.id)
+        datahub_request = dh.GetDisclosureRequest(
+            id=request.id,
+            date_range=request.date_range,
+        )
+
         datahub_response = datahub.get_disclosure(datahub_request)
 
         response = GetDisclosureResponse(
+            description=datahub_response.description,
+            begin=datahub_response.begin,
+            end=datahub_response.end,
             success=datahub_response.success,
             labels=datahub_response.labels,
             data=[],
@@ -53,12 +61,9 @@ class GetDisclosure(Controller):
                 ggos=[],
             )
 
-            ggos_summarized = summarize_technologies(
-                datahub_dataseries.ggos, ['technologyCode', 'fuelCode'])
-
-            for technology, summary_group in ggos_summarized:
+            for summary_group in datahub_dataseries.ggos:
                 dataseries.ggos.append(DataSet(
-                    label=technology,
+                    label=summary_group.group[0],
                     values=summary_group.values,
                 ))
 
@@ -158,6 +163,7 @@ class CreateDisclosure(Controller):
             gsrn=request.gsrn,
             begin=request.date_range.begin,
             end=request.date_range.end,
+            max_resolution=request.max_resolution,
             publicize_meteringpoints=request.publicize_meteringpoints,
             publicize_gsrn=request.publicize_gsrn,
             publicize_physical_address=request.publicize_physical_address,

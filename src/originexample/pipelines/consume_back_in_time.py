@@ -47,7 +47,7 @@ def start_consume_back_in_time_pipeline(user, begin_from, begin_to):
     name='consume_back_in_time.consume_back_in_time',
     autoretry_for=(Exception,),
     retry_backoff=2,
-    max_retries=5,
+    max_retries=11,
 )
 @logger.wrap_task(
     pipeline='consume_back_in_time',

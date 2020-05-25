@@ -6,30 +6,17 @@ from flask import make_response
 
 from originexample.http import Controller
 from originexample.db import inject_session
-from originexample.facilities import FacilityQuery, Facility, FacilityFilters, get_technology
+from originexample.facilities import FacilityQuery, Facility, FacilityFilters
 from originexample.common import DataSet, DateTimeRange
 from originexample.auth import User, requires_login
 from originexample.services import SummaryResolution
+from originexample.services import account as acc
 from originexample.services.datahub import (
     DataHubService,
     GetMeasurementSummaryRequest,
     MeasurementFilters,
     SummaryGroup,
 )
-from originexample.services import account as acc
-# from originexample.services.account import (
-#     AccountService,
-#     GgoFilters,
-#     GgoCategory,
-#     SummaryGrouping,
-#     summarize_technologies,
-#     GetGgoSummaryRequest,
-#     GetTransferSummaryRequest,
-#     TransferFilters,
-#     TransferDirection,
-#     GetGgoListRequest,
-#     Ggo,
-# )
 
 from .models import (
     MeasurementType,
@@ -40,7 +27,9 @@ from .models import (
     GetGgoDistributionsResponse,
     GetMeasurementsRequest,
     GetMeasurementsResponse,
-    GetGgoSummaryRequest, GetGgoSummaryResponse)
+    GetGgoSummaryRequest,
+    GetGgoSummaryResponse,
+)
 
 
 account_service = acc.AccountService()

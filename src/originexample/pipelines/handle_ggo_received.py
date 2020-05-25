@@ -31,7 +31,7 @@ def start_handle_ggo_received_pipeline(ggo, user):
     name='handle_ggo_received',
     autoretry_for=(Exception,),
     retry_backoff=2,
-    max_retries=5,
+    max_retries=11,
 )
 @logger.wrap_task(
     title='Handling GGO received',
