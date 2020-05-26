@@ -32,7 +32,7 @@ def get_soon_to_expire_tokens(session):
     users = UserQuery(session) \
         .should_refresh_token()
 
-    tasks = [refresh_token.si(user.id) for user in users]
+    tasks = [refresh_token.si(subject=user.sub) for user in users]
 
     group(*tasks).apply_async()
 
@@ -49,13 +49,13 @@ def get_soon_to_expire_tokens(session):
     task='refresh_token',
 )
 @atomic
-def refresh_token(user_id, session):
+def refresh_token(subject, session):
     """
-    :param int user_id:
+    :param str subject:
     :param Session session:
     """
     user = UserQuery(session) \
-        .has_id(user_id) \
+        .has_sub(subject) \
         .one()
 
     token = backend.refresh_token(user.refresh_token)
