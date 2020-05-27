@@ -118,14 +118,14 @@ class LoginCallback(Controller):
             .one_or_none()
 
         if user is None:
-            logger.error(f'Creating new user and subscribing to webhooks', extra={
+            logger.info(f'LOGIN: Creating new user and subscribing to webhooks', extra={
                 'subject': id_token['sub'],
             })
             self.create_new_user(token, id_token, expires, session)
             self.datahub.webhook_on_meteringpoints_available_subscribe(token['access_token'])
             self.account.webhook_on_ggo_received_subscribe(token['access_token'])
         else:
-            logger.error(f'Updating tokens for existing user', extra={
+            logger.info(f'LOGIN: Updating tokens for existing user', extra={
                 'subject': id_token['sub'],
             })
             self.update_user_attributes(user, token, expires)
