@@ -1,3 +1,4 @@
+from sqlalchemy import or_
 from datetime import datetime, timezone
 
 from .models import User
@@ -66,9 +67,11 @@ class UserQuery(object):
         :param str query:
         :rtype: UserQuery
         """
-        s = '%%%s' % query
         return UserQuery(self.session, self.q.filter(
-            User.name.ilike('%s%%' % query),
+            or_(
+                User.name.ilike('%s%%' % query),
+                User.company.ilike('%s%%' % query),
+            )
         ))
 
     def should_refresh_token(self):
