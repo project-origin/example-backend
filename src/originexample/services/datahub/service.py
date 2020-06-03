@@ -14,6 +14,8 @@ from originexample.settings import (
 from .models import (
     GetMeasurementRequest,
     GetMeasurementResponse,
+    GetMeasurementListRequest,
+    GetMeasurementListResponse,
     GetBeginRangeRequest,
     GetBeginRangeResponse,
     GetMeasurementSummaryRequest,
@@ -109,6 +111,20 @@ class DataHubService(object):
             token=token,
             path='/meteringpoints',
             response_schema=md.class_schema(GetMeteringPointsResponse),
+        )
+
+    def get_measurement_list(self, token, request):
+        """
+        :param str token:
+        :param GetMeasurementListRequest request:
+        :rtype: GetMeasurementListResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/measurements',
+            request=request,
+            request_schema=md.class_schema(GetMeasurementListRequest),
+            response_schema=md.class_schema(GetMeasurementListResponse),
         )
 
     def get_production(self, token, request):

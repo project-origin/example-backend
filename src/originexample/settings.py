@@ -45,6 +45,7 @@ DATAHUB_SERVICE_URL = os.environ['DATAHUB_SERVICE_URL']
 ACCOUNT_SERVICE_URL = os.environ['ACCOUNT_SERVICE_URL']
 ACCOUNT_SERVICE_LOGIN_URL = os.environ['ACCOUNT_SERVICE_LOGIN_URL']
 IDENTITY_SERVICE_EDIT_PROFILE_URL = os.environ['IDENTITY_SERVICE_EDIT_PROFILE_URL']
+ENERGY_DATA_SERVICE_URL = os.environ['ENERGY_DATA_SERVICE_URL']
 
 
 # -- webhook -----------------------------------------------------------------

@@ -20,6 +20,7 @@ Name | Description | Example
 `ACCOUNT_SERVICE_URL` | Public URL to AccountService without trailing slash | `https://account.projectorigin.dk`
 `ACCOUNT_SERVICE_LOGIN_URL` | Public URL to AccountService login endpoint | `https://account.projectorigin.dk/auth/login`
 `IDENTITY_SERVICE_EDIT_PROFILE_URL` | Public URL to IdentityService edit profile endpoint | `https://identity.projectorigin.dk/edit-profile`
+`ENERGY_DATA_SERVICE_URL` | Public URL to EnergyDataService datastore endpoint | `https://api.energidataservice.dk/datastore_search_sql`
 **Webhooks:** | |
 `WEBHOOK_SECRET` | The secret to post together with the webhooks. | `some-secret`
 **Authentication:** | |
