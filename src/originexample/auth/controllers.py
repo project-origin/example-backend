@@ -155,6 +155,7 @@ class LoginCallback(Controller):
             refresh_token=token['refresh_token'],
             token_expire=expires,
         )
+        user.update_last_login()
 
         session.add(user)
         session.flush()
