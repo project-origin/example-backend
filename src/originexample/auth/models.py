@@ -1,7 +1,6 @@
 import sqlalchemy as sa
 from typing import List
 from dataclasses import dataclass, field
-
 from marshmallow import fields, EXCLUDE
 from marshmallow_dataclass import NewType
 
@@ -19,6 +18,7 @@ class User(ModelBase):
 
     id = sa.Column(sa.Integer, primary_key=True, index=True)
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now())
+    last_login = sa.Column(sa.DateTime(timezone=True))
 
     # Name / Company name
     name = sa.Column(sa.String(), nullable=False)
@@ -37,11 +37,11 @@ class User(ModelBase):
     # Whether or not the user has been prompted to perform the onboarding flow
     has_performed_onboarding = sa.Column(sa.Boolean(), nullable=False, default=False)
 
-    # Whether or not Facilities are currently being imported asynchronously
-    is_importing_facilities = sa.Column(sa.Boolean(), nullable=False, default=False)
-
     def __str__(self):
         return 'User<%s>' % self.sub
+
+    def update_last_login(self):
+        self.last_login = sa.func.now()
 
 
 @dataclass
