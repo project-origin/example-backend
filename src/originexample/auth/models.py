@@ -37,9 +37,6 @@ class User(ModelBase):
     # Whether or not the user has been prompted to perform the onboarding flow
     has_performed_onboarding = sa.Column(sa.Boolean(), nullable=False, default=False)
 
-    # Whether or not Facilities are currently being imported asynchronously
-    is_importing_facilities = sa.Column(sa.Boolean(), nullable=False, default=False)
-
     def __str__(self):
         return 'User<%s>' % self.sub
 
