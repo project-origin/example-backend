@@ -44,7 +44,7 @@ def upgrade():
     sa.Column('date_from', sa.Date(), nullable=False),
     sa.Column('date_to', sa.Date(), nullable=False),
     sa.Column('amount', sa.Integer(), nullable=False),
-    sa.Column('unit', sa.Enum('Wh', 'KWh', 'MWh', 'GWh', name='unit'), nullable=False),
+    sa.Column('unit', sa.Enum('Wh', 'kWh', 'MWh', 'GWh', name='unit'), nullable=False),
     sa.Column('technology', sa.String(), nullable=True),
     sa.Column('reference', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['user_from_id'], ['auth_user.id'], ),
