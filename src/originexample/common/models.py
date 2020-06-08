@@ -8,7 +8,7 @@ from marshmallow import validates_schema, ValidationError
 
 class Unit(Enum):
     Wh = 1
-    KWh = 10**3
+    kWh = 10 ** 3
     MWh = 10**6
     GWh = 10**9
 
