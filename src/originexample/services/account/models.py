@@ -18,6 +18,7 @@ class Ggo:
     begin: datetime
     end: datetime
     amount: int
+    technology: str
     technology_code: str = field(metadata=dict(data_key='technologyCode'))
     fuel_code: str = field(metadata=dict(data_key='fuelCode'))
 
