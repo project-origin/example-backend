@@ -208,7 +208,7 @@ class AgreementConsumer(GgoConsumer):
         request.transfers.append(TransferRequest(
             amount=amount,
             reference=self.reference,
-            sub=self.receiver_sub,
+            account=self.receiver_sub,
         ))
 
     def get_transferred_amount(self, begin):

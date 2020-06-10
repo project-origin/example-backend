@@ -43,6 +43,18 @@ class User(ModelBase):
     def update_last_login(self):
         self.last_login = sa.func.now()
 
+    @property
+    def accounts(self):
+        """
+        :rtype: list[Account]
+        """
+        return [Account(id=self.sub)]
+
+
+@dataclass
+class Account:
+    id: str
+
 
 @dataclass
 class MappedUser:
@@ -56,6 +68,7 @@ class MappedUser:
     email: str
     phone: str
     has_performed_onboarding: bool = field(metadata=dict(data_key='hasPerformedOnboarding'))
+    accounts: List[Account] = field(default_factory=list)
 
 
 # -- Login request and response --------------------------------------------

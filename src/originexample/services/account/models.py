@@ -83,7 +83,7 @@ class TransferRequest:
     """
     amount: int
     reference: str
-    sub: str
+    account: str
 
 
 @dataclass
