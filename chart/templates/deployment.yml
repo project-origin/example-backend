@@ -15,6 +15,7 @@ spec:
       containers:
         - name: example-backend-container
           image: projectorigin/example-backend:{{ .Values.tag }}
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
           envFrom:
@@ -56,6 +57,7 @@ spec:
       containers:
         - name: example-backend-beat-container
           image: projectorigin/example-backend:{{ .Values.tag }}
+          imagePullPolicy: Always
           args: ["./entrypoint.beat.sh"]
           envFrom:
             - configMapRef:
@@ -92,6 +94,7 @@ spec:
       containers:
         - name: example-backend-worker-container
           image: projectorigin/example-backend:{{ .Values.tag }}
+          imagePullPolicy: Always
           args: ["./entrypoint.worker.sh"]
 
           envFrom:
