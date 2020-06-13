@@ -90,7 +90,7 @@ class DataHubService(object):
         if response.status_code != 200:
             raise DataHubServiceError(
                 (
-                    f'Invoking webhook resulted in status code {response.status_code}: '
+                    f'Invoking DataHubService resulted in status code {response.status_code}: '
                     f'{url}\n\n{response.content}'
                 ),
                 status_code=response.status_code,

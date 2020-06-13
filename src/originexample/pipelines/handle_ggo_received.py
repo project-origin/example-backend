@@ -9,7 +9,7 @@ from originexample.db import inject_session
 from originexample.tasks import celery_app, lock
 from originexample.auth import User, UserQuery
 from originexample.consuming import GgoConsumerController
-from originexample.services.account import Ggo
+from originexample.services.account import Ggo, AccountServiceError
 
 
 RETRY_DELAY = 10
@@ -81,6 +81,12 @@ def handle_ggo_received(task, subject, ggo_json, session):
 
         try:
             controller.consume_ggo(user, ggo, session)
+        except AccountServiceError as e:
+            if e.status_code == 400:
+                logger.exception('Got BAD REQUEST from AccountService', extra=__log_extra)
+            else:
+                logger.exception('Failed to consume GGO, retrying...', extra=__log_extra)
+                raise task.retry(exc=e)
         except Exception as e:
             logger.exception('Failed to consume GGO, retrying...', extra=__log_extra)
             raise task.retry(exc=e)
