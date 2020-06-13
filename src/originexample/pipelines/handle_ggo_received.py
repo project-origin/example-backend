@@ -77,6 +77,7 @@ def handle_ggo_received(task, subject, ggo_json, session):
     # the transferred or retired amount to exceed the allowed amount
     with lock(lock_key) as acquired:
         if not acquired:
+            logger.debug('Could not acquire lock, retrying...', extra=__log_extra)
             raise task.retry()
 
         try:
