@@ -14,6 +14,7 @@ from originexample.services.account import Ggo, AccountServiceError
 
 RETRY_DELAY = 10
 MAX_RETRIES = (24 * 60 * 60) / RETRY_DELAY
+LOCK_TIMEOUT = 2 * 60
 
 
 controller = GgoConsumerController()
@@ -75,7 +76,7 @@ def handle_ggo_received(task, subject, ggo_json, session):
     # This lock is in place to avoid timing issues when executing multiple
     # tasks for the same account at the same Ggo.begin, which can cause
     # the transferred or retired amount to exceed the allowed amount
-    with lock(lock_key) as acquired:
+    with lock(lock_key, timeout=LOCK_TIMEOUT) as acquired:
         if not acquired:
             logger.debug('Could not acquire lock, retrying...', extra=__log_extra)
             raise task.retry()

@@ -16,8 +16,8 @@ celery_app = Celery(
 
 
 @contextmanager
-def lock(key):
-    my_lock = redis.lock(key)
+def lock(key, timeout=None):
+    my_lock = redis.lock(key, timeout=timeout)
     have_lock = False
     try:
         have_lock = my_lock.acquire(blocking=True, blocking_timeout=2)
