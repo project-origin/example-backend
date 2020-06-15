@@ -1,9 +1,8 @@
 import sqlalchemy as sa
-from sqlalchemy import func, text
+from sqlalchemy import text
 
 from originexample.auth import User
 from originexample.services.account import Ggo
-from originexample.facilities import get_technology
 
 from .models import TradeAgreement, AgreementState
 
@@ -174,10 +173,11 @@ class AgreementQuery(object):
 
         :rtype: AgreementQuery
         """
-        technology = get_technology(ggo.technology_code, ggo.fuel_code)
-
         return AgreementQuery(self.session, self.q.filter(
             TradeAgreement.date_from <= ggo.begin.date(),
             TradeAgreement.date_to >= ggo.begin.date(),
-            (TradeAgreement.technology == None) | (TradeAgreement.technology == technology),
+            sa.or_(
+                TradeAgreement.technology.is_(None),
+                TradeAgreement.technology == ggo.technology,
+            ),
         ))

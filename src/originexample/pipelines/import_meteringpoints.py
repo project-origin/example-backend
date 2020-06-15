@@ -10,7 +10,6 @@ from originexample.facilities import (
     Facility,
     FacilityType,
     FacilityQuery,
-    get_technology,
 )
 
 
