@@ -19,8 +19,8 @@ from originexample.services.account import (
 )
 
 
-account = AccountService()
-datahub = DataHubService()
+account_service = AccountService()
+datahub_service = DataHubService()
 
 
 class GgoConsumerController(object):
@@ -88,7 +88,7 @@ class GgoConsumerController(object):
                 'begin': str(ggo.begin),
             })
 
-            account.compose(user.access_token, request)
+            account_service.compose(user.access_token, request)
 
 
 class GgoConsumer(object):
@@ -156,7 +156,7 @@ class RetiringConsumer(GgoConsumer):
         :rtype: Measurement
         """
         request = GetMeasurementRequest(gsrn=gsrn, begin=begin)
-        response = datahub.get_consumption(self.token, request)
+        response = datahub_service.get_consumption(self.token, request)
         return response.measurement
 
     def get_retired_amount(self, measurement):
@@ -169,7 +169,7 @@ class RetiringConsumer(GgoConsumer):
             retire_gsrn=[self.gsrn],
         )
         request = GetRetiredAmountRequest(filters=filters)
-        response = account.get_retired_amount(self.token, request)
+        response = account_service.get_retired_amount(self.token, request)
 
         return response.amount
 
@@ -208,7 +208,7 @@ class AgreementConsumer(GgoConsumer):
         request.transfers.append(TransferRequest(
             amount=amount,
             reference=self.reference,
-            sub=self.receiver_sub,
+            account=self.receiver_sub,
         ))
 
     def get_transferred_amount(self, begin):
@@ -224,6 +224,6 @@ class AgreementConsumer(GgoConsumer):
             )
         )
 
-        response = account.get_transferred_amount(self.token, request)
+        response = account_service.get_transferred_amount(self.token, request)
 
         return response.amount

@@ -1,3 +1,6 @@
+import json
+
+import marshmallow
 import requests
 import marshmallow_dataclass as md
 
@@ -34,57 +37,83 @@ from .models import (
 )
 
 
+class DataHubServiceConnectionError(Exception):
+    """
+    Raised when invoking DataHubService results in a connection error
+    """
+    pass
+
+
+class DataHubServiceError(Exception):
+    """
+    Raised when invoking DataHubService results in a status code != 200
+    """
+    def __init__(self, message, status_code, response_body):
+        super(DataHubServiceError, self).__init__(message)
+        self.status_code = status_code
+        self.response_body = response_body
+
+
 class DataHubService(object):
     """
     An interface to the Project Origin DataHub Service API.
     """
-    def invoke(self, path, response_schema, request=None, request_schema=None, token=None):
+    def invoke(self, path, response_schema, token=None, request=None, request_schema=None):
         """
         :param str path:
         :param obj request:
+        :param str token:
         :param Schema request_schema:
         :param Schema response_schema:
-        :param str token:
         :rtype obj:
         """
         url = '%s%s' % (DATAHUB_SERVICE_URL, path)
-        verify_ssl = not DEBUG
+        headers = {}
+        body = None
 
+        if token:
+            headers = {TOKEN_HEADER: f'Bearer {token}'}
         if request and request_schema:
             body = request_schema().dump(request)
-        else:
-            body = None
 
         try:
             response = requests.post(
                 url=url,
                 json=body,
-                headers={TOKEN_HEADER: f'Bearer {token}'} if token else None,
-                verify=verify_ssl,
+                headers=headers,
+                verify=not DEBUG,
             )
         except:
-            logger.exception(f'Invoking DataHubService resulted in an exception', extra={
-                'url': url,
-                'verify_ssl': verify_ssl,
-                'request_body': str(body),
-            })
-            raise
+            raise DataHubServiceConnectionError(
+                'Failed to POST request to DataHubService')
 
-        if response.status_code == 401:
-            raise Unauthorized
-        elif response.status_code != 200:
-            logger.error(f'Invoking DataHubService resulted in a status != 200', extra={
-                'url': url,
-                'verify_ssl': verify_ssl,
-                'request_body': str(body),
-                'response_code': response.status_code,
-                'response_content': str(response.content),
-            })
-            raise Exception('Request to DataHub failed: %s' % str(response.content))
+        if response.status_code != 200:
+            raise DataHubServiceError(
+                (
+                    f'Invoking DataHubService resulted in status code {response.status_code}: '
+                    f'{url}\n\n{response.content}'
+                ),
+                status_code=response.status_code,
+                response_body=str(response.content),
+            )
 
-        response_json = response.json()
+        try:
+            response_json = response.json()
+            response_model = response_schema().load(response_json)
+        except json.decoder.JSONDecodeError:
+            raise DataHubServiceError(
+                f'Failed to parse response JSON: {url}\n\n{response.content}',
+                status_code=response.status_code,
+                response_body=str(response.content),
+            )
+        except marshmallow.ValidationError:
+            raise DataHubServiceError(
+                f'Failed to validate response JSON: {url}\n\n{response.content}',
+                status_code=response.status_code,
+                response_body=str(response.content),
+            )
 
-        return response_schema().load(response_json)
+        return response_model
 
     def get_onboarding_url(self, token, return_url):
         """
