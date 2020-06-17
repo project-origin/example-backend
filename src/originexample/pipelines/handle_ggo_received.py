@@ -86,6 +86,7 @@ def handle_ggo_received(task, subject, ggo_json, session):
         except AccountServiceError as e:
             if e.status_code == 400:
                 logger.exception('Got BAD REQUEST from AccountService', extra=__log_extra)
+                raise
             else:
                 logger.exception('Failed to consume GGO, retrying...', extra=__log_extra)
                 raise task.retry(exc=e)
