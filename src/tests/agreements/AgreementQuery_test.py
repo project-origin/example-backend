@@ -322,7 +322,6 @@ def test__AgreementQuery__is_active__returns_correct_agreements(seeded_session):
 # -- is_elibigle_to_trade() --------------------------------------------------
 
 
-@patch('originexample.agreements.queries.get_technology')
 @pytest.mark.parametrize('ggo_technology, ggo_begin', (
     ('Wind', datetime(2020, 1, 1, 0, 0, 0, tzinfo=timezone.utc)),
     ('Wind', datetime(2020, 1, 31, 23, 0, 0, tzinfo=timezone.utc)),
@@ -332,11 +331,10 @@ def test__AgreementQuery__is_active__returns_correct_agreements(seeded_session):
     ('Wind', datetime(2020, 3, 31, 23, 0, 0, tzinfo=timezone.utc)),
 ))
 def test__AgreementQuery__is_elibigle_to_trade__TradeAgreement_exists__returns_correct_agreements(
-        get_technology_mock, seeded_session, ggo_technology, ggo_begin):
+        seeded_session, ggo_technology, ggo_begin):
 
     # Arrange
-    ggo = Mock(begin=ggo_begin)
-    get_technology_mock.return_value = ggo_technology
+    ggo = Mock(begin=ggo_begin, technology=ggo_technology)
 
     # Act
     query = AgreementQuery(seeded_session) \
@@ -348,7 +346,6 @@ def test__AgreementQuery__is_elibigle_to_trade__TradeAgreement_exists__returns_c
     assert all(ag.technology in (None, ggo_technology) for ag in query.all())
 
 
-@patch('originexample.agreements.queries.get_technology')
 @pytest.mark.parametrize('ggo_begin', (
     datetime(2020, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
     datetime(2020, 1, 31, 23, 0, 0, tzinfo=timezone.utc),
@@ -358,11 +355,10 @@ def test__AgreementQuery__is_elibigle_to_trade__TradeAgreement_exists__returns_c
     datetime(2020, 3, 31, 23, 0, 0, tzinfo=timezone.utc),
 ))
 def test__AgreementQuery__is_elibigle_to_trade__technology_does_not_exists__returns_only_agreements_without_technology(
-        get_technology_mock, seeded_session, ggo_begin):
+        seeded_session, ggo_begin):
 
     # Arrange
-    ggo = Mock(begin=ggo_begin)
-    get_technology_mock.return_value = 'nonexisting-technology'
+    ggo = Mock(begin=ggo_begin, technology='nonexisting-technology')
 
     # Act
     query = AgreementQuery(seeded_session) \
@@ -373,17 +369,15 @@ def test__AgreementQuery__is_elibigle_to_trade__technology_does_not_exists__retu
     assert all(ag.technology is None for ag in query.all())
 
 
-@patch('originexample.agreements.queries.get_technology')
 @pytest.mark.parametrize('ggo_begin', (
     datetime(2019, 12, 31, 23, 0, 0, tzinfo=timezone.utc),
     datetime(2020, 4, 1, 0, 0, 0, tzinfo=timezone.utc),
 ))
 def test__AgreementQuery__is_elibigle_to_trade__ggo_date_is_outside_agreements__returns_nothing(
-        get_technology_mock, seeded_session, ggo_begin):
+        seeded_session, ggo_begin):
 
     # Arrange
-    ggo = Mock(begin=ggo_begin)
-    get_technology_mock.return_value = 'Wind'
+    ggo = Mock(begin=ggo_begin, technology='Wind')
 
     # Act
     query = AgreementQuery(seeded_session) \

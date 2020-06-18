@@ -1,10 +1,10 @@
 from .auth import controllers as auth
-from .consuming import controllers as consuming
 from .commodities import controllers as commodities
 from .facilities import controllers as facilities
 from .agreements import controllers as agreements
 from .disclosures import controllers as disclosures
 from .support import controllers as support
+from .webhooks import controllers as webhooks
 
 
 urls = (
@@ -54,8 +54,9 @@ urls = (
     ('/disclosure/delete', disclosures.DeleteDisclosure()),
 
     # Webhooks
-    ('/webhook/on-ggo-received', consuming.OnGgoReceivedWebhook()),
-    ('/webhook/on-meteringpoints-available', facilities.OnMeteringPointsAvailableWebhook()),
+    ('/webhook/on-ggo-received', webhooks.OnGgoReceivedWebhook()),
+    ('/webhook/on-measurement-published', webhooks.OnMeasurementPublishedWebhook()),
+    ('/webhook/on-meteringpoints-available', webhooks.OnMeteringPointsAvailableWebhook()),
 
     # Misc
     ('/support/submit-support-enquiry', support.SubmitSupportEnquiry()),

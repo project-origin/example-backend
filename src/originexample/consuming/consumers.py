@@ -6,6 +6,8 @@ from originexample.agreements import TradeAgreement, AgreementQuery
 from originexample.facilities import Facility, FacilityQuery
 from originexample.services.datahub import DataHubService, GetMeasurementRequest
 from originexample.services.account import (
+    Ggo,
+    GgoCategory,
     AccountService,
     TransferFilters,
     TransferDirection,
@@ -15,7 +17,7 @@ from originexample.services.account import (
     ComposeGgoRequest,
     GetTransferredAmountRequest,
     GetRetiredAmountRequest,
-    Ggo,
+    GetTotalAmountRequest,
 )
 
 
@@ -31,7 +33,7 @@ class GgoConsumerController(object):
         """
         :param User user:
         :param Ggo ggo:
-        :param Session session:
+        :param sqlalchemy.orm.Session session:
         :rtype: collections.abc.Iterable[GgoConsumer]
         """
         facilities = FacilityQuery(session) \
@@ -40,28 +42,20 @@ class GgoConsumerController(object):
             .is_eligible_to_retire(ggo) \
             .order_by(Facility.retiring_priority.asc())
 
-        yield from map(self.build_retire_consumer, facilities)
+        for facility in facilities:
+            yield RetiringConsumer(facility)
 
         agreements = AgreementQuery(session) \
             .is_outbound_from(user) \
             .is_elibigle_to_trade(ggo) \
+            .is_operating_at(ggo.begin) \
             .is_active()
 
-        yield from map(self.build_agreement_consumer, agreements)
-
-    def build_retire_consumer(self, facility):
-        """
-        :param Facility facility:
-        :rtype: GgoConsumer
-        """
-        return RetiringConsumer(facility)
-
-    def build_agreement_consumer(self, agreement):
-        """
-        :param TradeAgreement agreement:
-        :rtype: GgoConsumer
-        """
-        return AgreementConsumer(agreement)
+        for agreement in agreements:
+            if agreement.limit_to_consumption:
+                yield AgreementLimitedToConsumptionConsumer(agreement, session)
+            else:
+                yield AgreementConsumer(agreement)
 
     def consume_ggo(self, user, ggo, session):
         """
@@ -70,7 +64,7 @@ class GgoConsumerController(object):
         :param Session session:
         """
         request = ComposeGgoRequest(address=ggo.address)
-        consumers = list(self.get_consumers(user, ggo, session))
+        consumers = self.get_consumers(user, ggo, session)
         remaining_amount = ggo.amount
 
         for consumer in takewhile(lambda _: remaining_amount > 0, consumers):
@@ -95,18 +89,18 @@ class GgoConsumer(object):
     """
     TODO
     """
-    def get_desired_amount(self, ggo):
-        """
-        :param Ggo ggo:
-        :rtype: int
-        """
-        raise NotImplementedError
-
     def consume(self, request, ggo, amount):
         """
         :param ComposeGgoRequest request:
         :param Ggo ggo:
         :param int amount:
+        """
+        raise NotImplementedError
+
+    def get_desired_amount(self, ggo):
+        """
+        :param Ggo ggo:
+        :rtype: int
         """
         raise NotImplementedError
 
@@ -119,24 +113,10 @@ class RetiringConsumer(GgoConsumer):
         """
         :param Facility facility:
         """
-        self.gsrn = facility.gsrn
-        self.token = facility.user.access_token
+        self.facility = facility
 
     def __str__(self):
-        return 'RetiringConsumer<%s>' % self.gsrn
-
-    def get_desired_amount(self, ggo):
-        """
-        :rtype: int
-        """
-        measurement = self.get_measurement(self.gsrn, ggo.begin)
-        if measurement:
-            retired_amount = self.get_retired_amount(measurement)
-            remaining_amount = measurement.amount - retired_amount
-            desired_amount = min(remaining_amount, ggo.amount)
-            return max(0, desired_amount)
-        else:
-            return 0
+        return 'RetiringConsumer<%s>' % self.facility.gsrn
 
     def consume(self, request, ggo, amount):
         """
@@ -146,32 +126,32 @@ class RetiringConsumer(GgoConsumer):
         """
         request.retires.append(RetireRequest(
             amount=amount,
-            gsrn=self.gsrn,
+            gsrn=self.facility.gsrn,
         ))
 
-    def get_measurement(self, gsrn, begin):
+    def get_desired_amount(self, ggo):
         """
-        :param str gsrn:
-        :param datetime.datetime begin:
-        :rtype: Measurement
-        """
-        request = GetMeasurementRequest(gsrn=gsrn, begin=begin)
-        response = datahub_service.get_consumption(self.token, request)
-        return response.measurement
-
-    def get_retired_amount(self, measurement):
-        """
-        :param Measurement measurement:
+        :param Ggo ggo:
         :rtype: int
         """
-        filters = RetireFilters(
-            address=[measurement.address],
-            retire_gsrn=[self.gsrn],
+        measurement = get_consumption(
+            token=self.facility.user.access_token,
+            gsrn=self.facility.gsrn,
+            begin=ggo.begin,
         )
-        request = GetRetiredAmountRequest(filters=filters)
-        response = account_service.get_retired_amount(self.token, request)
 
-        return response.amount
+        if measurement is None:
+            return 0
+
+        retired_amount = get_retired_amount(
+            token=self.facility.user.access_token,
+            gsrn=self.facility.gsrn,
+            measurement=measurement,
+        )
+
+        desired_amount = measurement.amount - retired_amount
+
+        return max(0, min(ggo.amount, desired_amount))
 
 
 class AgreementConsumer(GgoConsumer):
@@ -181,23 +161,13 @@ class AgreementConsumer(GgoConsumer):
     def __init__(self, agreement):
         """
         :param TradeAgreement agreement:
+        :param sqlalchemy.orm.Session session:
         """
-        self.amount = agreement.calculated_amount
+        self.agreement = agreement
         self.reference = agreement.public_id
-        self.receiver_sub = agreement.user_to.sub
-        self.token = agreement.user_from.access_token
 
     def __str__(self):
-        return 'AgreementConsumer<%s>' % self.reference
-
-    def get_desired_amount(self, ggo):
-        """
-        :param Ggo ggo:
-        :rtype: int
-        """
-        transferred_amount = self.get_transferred_amount(ggo.begin)
-        desired_amount = min(self.amount - transferred_amount, ggo.amount)
-        return max(0, desired_amount)
+        return 'AgreementConsumer<%s>' % self.agreement.public_id
 
     def consume(self, request, ggo, amount):
         """
@@ -207,23 +177,162 @@ class AgreementConsumer(GgoConsumer):
         """
         request.transfers.append(TransferRequest(
             amount=amount,
-            reference=self.reference,
-            account=self.receiver_sub,
+            reference=self.agreement.public_id,
+            account=self.agreement.user_to.sub,
         ))
 
-    def get_transferred_amount(self, begin):
+    def get_desired_amount(self, ggo):
         """
+        :param Ggo ggo:
+        :rtype: int
+        """
+        transferred_amount = get_transferred_amount(
+            token=self.agreement.user_from.access_token,
+            reference=self.agreement.public_id,
+            begin=ggo.begin,
+        )
+
+        desired_amount = self.agreement.calculated_amount - transferred_amount
+
+        return max(0, min(ggo.amount, desired_amount))
+
+
+class AgreementLimitedToConsumptionConsumer(GgoConsumer):
+    """
+    TODO
+    """
+    def __init__(self, agreement, session):
+        """
+        :param TradeAgreement agreement:
+        :param sqlalchemy.orm.Session session:
+        """
+        self.agreement = agreement
+        self.session = session
+
+    def __str__(self):
+        return 'AgreementLimitedToConsumptionConsumer<%s>' % self.agreement.public_id
+
+    def consume(self, request, ggo, amount):
+        """
+        :param ComposeGgoRequest request:
+        :param Ggo ggo:
+        :param int amount:
+        """
+        request.transfers.append(TransferRequest(
+            amount=amount,
+            reference=self.agreement.public_id,
+            account=self.agreement.user_to.sub,
+        ))
+
+    def get_desired_amount(self, ggo):
+        """
+        :param Ggo ggo:
+        :rtype: int
+        """
+        facilities = FacilityQuery(self.session) \
+            .belongs_to(self.agreement.user_to) \
+            .is_retire_receiver()
+
+        desired_amount = 0
+
+        for facility in facilities:
+            desired_amount += self.get_desired_amount_for_facility(
+                facility=facility,
+                begin=ggo.begin,
+            )
+
+        return max(0, min(ggo.amount, desired_amount))
+
+    def get_desired_amount_for_facility(self, facility, begin):
+        """
+        :param Facility facility:
         :param datetime.datetime begin:
         :rtype: int
         """
-        request = GetTransferredAmountRequest(
-            direction=TransferDirection.OUTBOUND,
-            filters=TransferFilters(
-                reference=[self.reference],
-                begin=begin,
-            )
+        measurement = get_consumption(
+            token=facility.user.access_token,
+            gsrn=facility.gsrn,
+            begin=begin,
         )
 
-        response = account_service.get_transferred_amount(self.token, request)
+        if measurement is None:
+            return 0
 
-        return response.amount
+        retired_amount = get_retired_amount(
+            token=facility.user.access_token,
+            gsrn=facility.gsrn,
+            measurement=measurement,
+        )
+
+        stored_amount = get_stored_amount(
+            token=facility.user.access_token,
+            begin=begin,
+        )
+
+        remaining_amount = measurement.amount - retired_amount - stored_amount
+
+        return max(0, remaining_amount)
+
+
+# -- Helper functions --------------------------------------------------------
+
+
+def get_consumption(token, gsrn, begin):
+    """
+    :param str token:
+    :param str gsrn:
+    :param datetime.datetime begin:
+    :rtype: Measurement
+    """
+    request = GetMeasurementRequest(gsrn=gsrn, begin=begin)
+    response = datahub_service.get_consumption(token, request)
+    return response.measurement
+
+
+def get_retired_amount(token, gsrn, measurement):
+    """
+    :param str token:
+    :param str gsrn:
+    :param Measurement measurement:
+    :rtype: int
+    """
+    request = GetRetiredAmountRequest(filters=RetireFilters(
+        address=[measurement.address],
+        retire_gsrn=[gsrn],
+    ))
+    response = account_service.get_retired_amount(token, request)
+    return response.amount
+
+
+def get_transferred_amount(token, reference, begin):
+    """
+    :param str token:
+    :param str reference:
+    :param datetime.datetime begin:
+    :rtype: int
+    """
+    request = GetTransferredAmountRequest(
+        direction=TransferDirection.OUTBOUND,
+        filters=TransferFilters(
+            reference=[reference],
+            begin=begin,
+        )
+    )
+    response = account_service.get_transferred_amount(token, request)
+    return response.amount
+
+
+def get_stored_amount(token, begin):
+    """
+    :param str token:
+    :param datetime.datetime begin:
+    :rtype: int
+    """
+    request = GetTotalAmountRequest(
+        filters=TransferFilters(
+            begin=begin,
+            category=GgoCategory.STORED,
+        )
+    )
+    response = account_service.get_total_amount(token, request)
+    return response.amount
