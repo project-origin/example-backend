@@ -232,11 +232,3 @@ class SetRetiringPriorityRequest:
 @dataclass
 class SetRetiringPriorityResponse:
     success: bool
-
-
-# -- OnMeteringPointsAvailableWebhook request and response -------------------
-
-
-@dataclass
-class OnMeteringPointsAvailableWebhookRequest:
-    sub: str

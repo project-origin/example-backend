@@ -6,3 +6,4 @@ from .import_meteringpoints import *
 from .import_technologies import *
 from .refresh_access_token import *
 from .consume_back_in_time import *
+from .handle_measurement_published import *
