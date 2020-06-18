@@ -92,6 +92,7 @@ class AbstractAgreementController(Controller):
             unit=agreement.unit,
             technology=agreement.technology,
             reference=agreement.reference,
+            limit_to_consumption=agreement.limit_to_consumption,
         )
 
     def map_outbound_agreement(self, agreement):
@@ -112,6 +113,7 @@ class AbstractAgreementController(Controller):
             technology=agreement.technology,
             reference=agreement.reference,
             facilities=list(agreement.facilities),
+            limit_to_consumption=agreement.limit_to_consumption,
         )
 
 
@@ -399,6 +401,7 @@ class SubmitAgreementProposal(Controller):
             amount=request.amount,
             unit=request.unit,
             technology=request.technology,
+            limit_to_consumption=request.limit_to_consumption,
         )
 
         if facilities:
