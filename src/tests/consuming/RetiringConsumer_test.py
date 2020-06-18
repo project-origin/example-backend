@@ -4,8 +4,8 @@ from unittest.mock import Mock, patch
 from originexample.consuming.consumers import RetiringConsumer
 
 
-@patch('originexample.consuming.consumers.account')
-@patch('originexample.consuming.consumers.datahub')
+@patch('originexample.consuming.consumers.account_service')
+@patch('originexample.consuming.consumers.datahub_service')
 @pytest.mark.parametrize(
     'ggo_amount, measured_amount, retired_amount, expected_amount', (
     (200,        100,             50,             50),
@@ -20,14 +20,14 @@ from originexample.consuming.consumers import RetiringConsumer
     (0,          200,             100,            0),
 ))
 def test__RetiringConsumer__get_desired_amount__should_return_correct_amount(
-        datahub, account, ggo_amount, measured_amount, retired_amount, expected_amount):
+        datahub_service_mock, account_service_mock, ggo_amount, measured_amount, retired_amount, expected_amount):
 
     uut = RetiringConsumer(facility=Mock())
-    account.get_retired_amount.return_value = Mock(amount=retired_amount)
+    account_service_mock.get_retired_amount.return_value = Mock(amount=retired_amount)
     if measured_amount is None:
-        datahub.get_consumption.return_value = Mock(measurement=None)
+        datahub_service_mock.get_consumption.return_value = Mock(measurement=None)
     else:
-        datahub.get_consumption.return_value = Mock(measurement=Mock(amount=measured_amount))
+        datahub_service_mock.get_consumption.return_value = Mock(measurement=Mock(amount=measured_amount))
 
     # Act
     desired_amount = uut.get_desired_amount(Mock(amount=ggo_amount))

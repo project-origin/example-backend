@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 from originexample.consuming.consumers import AgreementConsumer
 
 
-@patch('originexample.consuming.consumers.account')
+@patch('originexample.consuming.consumers.account_service')
 @pytest.mark.parametrize(
     'ggo_amount, agreement_amount, transferred_amount, expected_amount', (
     (200,        100,              50,                 50),
@@ -18,11 +18,12 @@ from originexample.consuming.consumers import AgreementConsumer
     (0,          200,              100,                0),
 ))
 def test__AgreementConsumer__get_desired_amount__should_return_correct_amount(
-        account, ggo_amount, agreement_amount, transferred_amount, expected_amount):
+        account_service_mock, ggo_amount, agreement_amount, transferred_amount, expected_amount):
+
+    account_service_mock.get_transferred_amount.return_value = Mock(amount=transferred_amount)
 
     agreement = Mock(calculated_amount=agreement_amount)
     uut = AgreementConsumer(agreement=agreement)
-    account.get_transferred_amount.return_value = Mock(amount=transferred_amount)
 
     # Act
     desired_amount = uut.get_desired_amount(Mock(amount=ggo_amount))
@@ -54,4 +55,4 @@ def test__AgreementConsumer__consume__should_append_transfers():
     assert len(request.retires) == 0
     assert request.transfers[0].amount == 100
     assert request.transfers[0].reference == 'Agreement Public ID'
-    assert request.transfers[0].sub == 'user_to_sub'
+    assert request.transfers[0].account == 'user_to_sub'
