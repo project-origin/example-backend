@@ -153,6 +153,7 @@ class MappedTradeAgreement:
     unit: Unit
     technology: str
     reference: str
+    limit_to_consumption: bool = field(metadata=dict(data_key='limitToConsumption'))
 
     # Only for the outbound-user of an agreement
     facilities: List[MappedFacility] = field(default_factory=list)
@@ -222,6 +223,7 @@ class SubmitAgreementProposalRequest:
     amount: int
     unit: Unit
     date: DateRange
+    limit_to_consumption: bool = field(metadata=dict(data_key='limitToConsumption'))
     technology: str = field(default=None)
     facility_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds'))
 
