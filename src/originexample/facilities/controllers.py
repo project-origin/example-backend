@@ -1,14 +1,10 @@
 import marshmallow_dataclass as md
 
 from originexample.http import Controller
-from originexample.auth import User, requires_login, UserQuery
+from originexample.auth import User, requires_login
 from originexample.db import inject_session, atomic
-from originexample.webhooks import validate_hmac
 from originexample.technology import Technology
-from originexample.pipelines import (
-    start_import_meteringpoints,
-    start_consume_back_in_time_pipeline,
-)
+from originexample.pipelines import start_consume_back_in_time_pipeline
 from originexample.services.datahub import (
     DataHubService,
     GetBeginRangeRequest,
@@ -28,7 +24,6 @@ from .models import (
     GetFilteringOptionsResponse,
     SetRetiringPriorityRequest,
     SetRetiringPriorityResponse,
-    OnMeteringPointsAvailableWebhookRequest,
 )
 
 
@@ -207,28 +202,3 @@ class RetireBackInTime(Controller):
                 )
 
         return True
-
-
-class OnMeteringPointsAvailableWebhook(Controller):
-    """
-    TODO
-    """
-    Request = md.class_schema(OnMeteringPointsAvailableWebhookRequest)
-
-    @validate_hmac
-    @inject_session
-    def handle_request(self, request, session):
-        """
-        :param OnMeteringPointsAvailableWebhookRequest request:
-        :param Session session:
-        :rtype: bool
-        """
-        user = UserQuery(session) \
-            .has_sub(request.sub) \
-            .one_or_none()
-
-        if user:
-            start_import_meteringpoints(user)
-            return True
-        else:
-            return False

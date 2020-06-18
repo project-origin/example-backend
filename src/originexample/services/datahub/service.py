@@ -257,6 +257,21 @@ class DataHubService(object):
             response_schema=md.class_schema(DeleteDisclosureResponse),
         )
 
+    def webhook_on_measurement_published_subscribe(self, token):
+        """
+        :param str token:
+        :rtype: WebhookSubscribeResponse
+        """
+        callback_url = f'{PROJECT_URL}/webhook/on-measurement-published'
+
+        return self.invoke(
+            token=token,
+            path='/webhook/on-measurement-published/subscribe',
+            request=WebhookSubscribeRequest(url=callback_url, secret=WEBHOOK_SECRET),
+            request_schema=md.class_schema(WebhookSubscribeRequest),
+            response_schema=md.class_schema(WebhookSubscribeResponse),
+        )
+
     def webhook_on_meteringpoints_available_subscribe(self, token):
         """
         :param str token:

@@ -1,11 +1,8 @@
 import json
-
 import marshmallow
 import requests
 import marshmallow_dataclass as md
 
-from originexample import logger
-from originexample.http import Unauthorized
 from originexample.settings import (
     PROJECT_URL,
     ACCOUNT_SERVICE_URL,
@@ -19,6 +16,8 @@ from .models import (
     GetGgoListResponse,
     GetGgoSummaryRequest,
     GetGgoSummaryResponse,
+    GetTotalAmountRequest,
+    GetTotalAmountResponse,
     ComposeGgoRequest,
     ComposeGgoResponse,
     GetTransferSummaryRequest,
@@ -131,6 +130,20 @@ class AccountService(object):
             request=request,
             request_schema=md.class_schema(GetGgoSummaryRequest),
             response_schema=md.class_schema(GetGgoSummaryResponse),
+        )
+
+    def get_total_amount(self, token, request):
+        """
+        :param str token:
+        :param GetTotalAmountRequest request:
+        :rtype: GetTotalAmountResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/ggo/get-total-amount',
+            request=request,
+            request_schema=md.class_schema(GetTotalAmountRequest),
+            response_schema=md.class_schema(GetTotalAmountResponse),
         )
 
     def compose(self, token, request):

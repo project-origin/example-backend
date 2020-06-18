@@ -122,6 +122,7 @@ class LoginCallback(Controller):
                 'subject': id_token['sub'],
             })
             self.create_new_user(token, id_token, expires, session)
+            self.datahub.webhook_on_measurement_published_subscribe(token['access_token'])
             self.datahub.webhook_on_meteringpoints_available_subscribe(token['access_token'])
             self.account.webhook_on_ggo_received_subscribe(token['access_token'])
         else:

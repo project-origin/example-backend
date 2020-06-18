@@ -28,13 +28,24 @@ class AgreementQuery(object):
     def __getattr__(self, name):
         return getattr(self.q, name)
 
+    def has_id(self, agreement_id):
+        """
+        TODO unittest this
+
+        :param int agreement_id:
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.id == agreement_id,
+        ))
+
     def has_public_id(self, public_id):
         """
         :param str public_id:
         :rtype: AgreementQuery
         """
         return AgreementQuery(self.session, self.q.filter(
-            TradeAgreement.public_id == public_id
+            TradeAgreement.public_id == public_id,
         ))
 
     def belongs_to(self, user):
@@ -45,7 +56,7 @@ class AgreementQuery(object):
         return AgreementQuery(self.session, self.q.filter(
             sa.or_(
                 TradeAgreement.user_from_id == user.id,
-                TradeAgreement.user_to_id == user.id
+                TradeAgreement.user_to_id == user.id,
             ),
         ))
 
@@ -67,7 +78,7 @@ class AgreementQuery(object):
             TradeAgreement.user_proposed_id != user.id,
             sa.or_(
                 TradeAgreement.user_from_id == user.id,
-                TradeAgreement.user_to_id == user.id
+                TradeAgreement.user_to_id == user.id,
             ),
         ))
 
@@ -81,7 +92,7 @@ class AgreementQuery(object):
             TradeAgreement.user_proposed_id != user.id,
             sa.or_(
                 TradeAgreement.user_from_id == user.id,
-                TradeAgreement.user_to_id == user.id
+                TradeAgreement.user_to_id == user.id,
             ),
         ))
 
@@ -91,7 +102,7 @@ class AgreementQuery(object):
         :rtype: AgreementQuery
         """
         return AgreementQuery(self.session, self.q.filter(
-            TradeAgreement.user_to_id == user.id
+            TradeAgreement.user_to_id == user.id,
         ))
 
     def is_outbound_from(self, user):
@@ -100,7 +111,7 @@ class AgreementQuery(object):
         :rtype: AgreementQuery
         """
         return AgreementQuery(self.session, self.q.filter(
-            TradeAgreement.user_from_id == user.id
+            TradeAgreement.user_from_id == user.id,
         ))
 
     def is_pending(self):
@@ -159,13 +170,33 @@ class AgreementQuery(object):
             TradeAgreement.declined >= text("NOW() - INTERVAL '14 DAYS'"),
         ))
 
-    def is_active(self):
+    def is_limited_to_consumption(self):
         """
-        TODO Filter on dates?
+        TODO unittest this
 
         :rtype: AgreementQuery
         """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.limit_to_consumption.is_(True),
+        ))
+
+    def is_active(self):
+        """
+        :rtype: AgreementQuery
+        """
         return self.is_accepted()
+
+    def is_operating_at(self, begin):
+        """
+        TODO unittest this
+
+        :param datetime.datetime begin:
+        :rtype: AgreementQuery
+        """
+        return AgreementQuery(self.session, self.q.filter(
+            TradeAgreement.date_from <= begin.date(),
+            TradeAgreement.date_to >= begin.date(),
+        ))
 
     def is_elibigle_to_trade(self, ggo):
         """

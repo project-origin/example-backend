@@ -16,7 +16,7 @@ from originexample.facilities import (
 service = DataHubService()
 
 
-def start_import_meteringpoints(user):
+def start_import_meteringpoints_pipeline(user):
     """
     :param User user:
     """

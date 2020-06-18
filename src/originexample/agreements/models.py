@@ -43,10 +43,10 @@ class TradeAgreement(ModelBase):
     __tablename__ = 'agreements_agreement'
     __table_args__ = (
         sa.UniqueConstraint('public_id'),
-        #sa.CheckConstraint('date_from <= date_to', name='date_from <= date_to'),
-        #sa.CheckConstraint('user_from_id != user_to_id', name='user_from_id != user_to_id'),
-        #sa.CheckConstraint('user_proposed_id = user_from_id OR user_proposed_id = user_to_id',
-        #                   name='user_proposed_id = user_from_id OR user_proposed_id = user_to_id'),
+        sa.CheckConstraint(
+            "(limit_to_consumption = 'f' and amount is not null and unit is not null) or (limit_to_consumption = 't')",
+            name="limit_to_consumption_OR_amount_and_unit",
+        ),
     )
 
     # Meta
@@ -71,10 +71,20 @@ class TradeAgreement(ModelBase):
     state = sa.Column(sa.Enum(AgreementState), index=True, nullable=False)
     date_from = sa.Column(sa.Date(), nullable=False)
     date_to = sa.Column(sa.Date(), nullable=False)
-    amount = sa.Column(sa.Integer(), nullable=False)
-    unit = sa.Column(sa.Enum(Unit), nullable=False)
     technology = sa.Column(sa.String())
     reference = sa.Column(sa.String())
+
+    # Amount
+    amount = sa.Column(sa.Integer())
+    unit = sa.Column(sa.Enum(Unit))
+    limit_to_consumption = sa.Column(sa.Boolean())
+
+    @property
+    def transfer_reference(self):
+        """
+        :rtype: str
+        """
+        return self.public_id
 
     @property
     def calculated_amount(self):
@@ -109,7 +119,6 @@ class TradeAgreement(ModelBase):
         :rtype: bool
         """
         return self.state == AgreementState.PENDING
-
 
     def decline_proposal(self):
         self.state = AgreementState.DECLINED
