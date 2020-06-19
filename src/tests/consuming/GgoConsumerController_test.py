@@ -3,8 +3,8 @@ from unittest.mock import Mock, patch, ANY
 from originexample.consuming.consumers import GgoConsumerController
 
 
-@patch('originexample.consuming.consumers.account')
-def test__GgoConsumerController__consume_ggo__consume_nothing__should_not_invoke_AccountService(account):
+@patch('originexample.consuming.consumers.account_service')
+def test__GgoConsumerController__consume_ggo__consume_nothing__should_not_invoke_AccountService(account_service_mock):
 
     uut = GgoConsumerController()
     uut.get_consumers = Mock()
@@ -18,11 +18,11 @@ def test__GgoConsumerController__consume_ggo__consume_nothing__should_not_invoke
     )
 
     # Assert on AccountService.compose()
-    account.compose.assert_not_called()
+    account_service_mock.compose.assert_not_called()
 
 
-@patch('originexample.consuming.consumers.account')
-def test__GgoConsumerController__consume_ggo__consume_more_than_available__should_only_consume_available_amount(account):
+@patch('originexample.consuming.consumers.account_service')
+def test__GgoConsumerController__consume_ggo__consume_more_than_available__should_only_consume_available_amount(account_service_mock):
 
     def __mock_consumer(amount):
         mock = Mock()
@@ -54,4 +54,4 @@ def test__GgoConsumerController__consume_ggo__consume_more_than_available__shoul
     consumer4.consume.assert_not_called()
 
     # Assert on AccountService.compose()
-    account.compose.assert_called_once()
+    account_service_mock.compose.assert_called_once()

@@ -197,7 +197,7 @@ class AgreementConsumer(GgoConsumer):
         return max(0, min(ggo.amount, desired_amount))
 
 
-class AgreementLimitedToConsumptionConsumer(GgoConsumer):
+class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
     """
     TODO
     """
@@ -206,42 +206,42 @@ class AgreementLimitedToConsumptionConsumer(GgoConsumer):
         :param TradeAgreement agreement:
         :param sqlalchemy.orm.Session session:
         """
-        self.agreement = agreement
         self.session = session
+        super(AgreementLimitedToConsumptionConsumer, self) \
+            .__init__(agreement)
 
     def __str__(self):
-        return 'AgreementLimitedToConsumptionConsumer<%s>' % self.agreement.public_id
-
-    def consume(self, request, ggo, amount):
-        """
-        :param ComposeGgoRequest request:
-        :param Ggo ggo:
-        :param int amount:
-        """
-        request.transfers.append(TransferRequest(
-            amount=amount,
-            reference=self.agreement.public_id,
-            account=self.agreement.user_to.sub,
-        ))
+        return 'AgreementLimitedToConsumptionConsumer<%s>' % self.reference
 
     def get_desired_amount(self, ggo):
         """
         :param Ggo ggo:
         :rtype: int
         """
-        facilities = FacilityQuery(self.session) \
-            .belongs_to(self.agreement.user_to) \
-            .is_retire_receiver()
+        remaining_amount = super(AgreementLimitedToConsumptionConsumer, self) \
+            .get_desired_amount(ggo)
+
+        if remaining_amount <= 0:
+            return 0
+
+        remaining_amount -= get_stored_amount(
+            token=self.agreement.user_to.access_token,
+            begin=ggo.begin,
+        )
+
+        if remaining_amount <= 0:
+            return 0
 
         desired_amount = 0
 
-        for facility in facilities:
+        # TODO takewhile desired_amount <= min(ggo.amount, remaining_amount)
+        for facility in self.get_facilities():
             desired_amount += self.get_desired_amount_for_facility(
                 facility=facility,
                 begin=ggo.begin,
             )
 
-        return max(0, min(ggo.amount, desired_amount))
+        return max(0, min(ggo.amount, remaining_amount, desired_amount))
 
     def get_desired_amount_for_facility(self, facility, begin):
         """
@@ -264,14 +264,18 @@ class AgreementLimitedToConsumptionConsumer(GgoConsumer):
             measurement=measurement,
         )
 
-        stored_amount = get_stored_amount(
-            token=facility.user.access_token,
-            begin=begin,
-        )
-
-        remaining_amount = measurement.amount - retired_amount - stored_amount
+        remaining_amount = measurement.amount - retired_amount
 
         return max(0, remaining_amount)
+
+    def get_facilities(self):
+        """
+        :rtype: list[Facility]
+        """
+        return FacilityQuery(self.session) \
+            .belongs_to(self.agreement.user_to) \
+            .is_retire_receiver() \
+            .all()
 
 
 # -- Helper functions --------------------------------------------------------
