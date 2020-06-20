@@ -61,8 +61,12 @@ user4 = User(
 )
 
 
-def seed_facility_test_data(session):
 
+@pytest.fixture(scope='module')
+def seeded_session(session):
+    """
+    Returns a Session object with Ggo + User data seeded for testing
+    """
     # Dependencies
     session.add(user1)
     session.add(user2)
@@ -112,23 +116,7 @@ def seed_facility_test_data(session):
 
     session.commit()
 
-
-@pytest.fixture(scope='module')
-def seeded_session():
-    """
-    Returns a Session object with Ggo + User data seeded for testing
-    """
-    with testing.postgresql.Postgresql() as psql:
-        engine = create_engine(psql.url())
-        ModelBase.metadata.create_all(engine)
-        Session = sessionmaker(bind=engine, expire_on_commit=False)
-        session = Session()
-
-        seed_facility_test_data(session)
-
-        yield session
-
-        session.close()
+    yield session
 
 
 # -- TEST CASES --------------------------------------------------------------
