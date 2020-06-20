@@ -34,7 +34,31 @@ variables:
 pool:
   vmImage: 'ubuntu-latest'
 
-jobs:  
+jobs:
+  - job: test
+    displayName: Test
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+      - script: sudo apt update
+        displayName: 'Update repo'
+
+      - script: sudo apt install -y pkg-config gcc libsecp256k1-dev libzmq3-dev
+        displayName: 'Install packages'
+
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.7'
+
+      - script: pip install --upgrade twine wheel setuptools pip pipenv
+        displayName: 'Upgrading/installing Python packages'
+
+      - script: python -m pipenv install -d
+        displayName: 'Installing dependencies from Pipenv'
+
+      - script: python -m pipenv pytest
+        displayName: 'Run tests'
+
   - job: build_and_release
     displayName: Build and Release
     steps:
