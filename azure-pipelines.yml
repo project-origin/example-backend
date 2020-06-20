@@ -56,7 +56,7 @@ jobs:
       - script: python -m pipenv install -d
         displayName: 'Installing dependencies from Pipenv'
 
-      - script: python -m pipenv pytest
+      - script: python -m pipenv run pytest
         displayName: 'Run tests'
 
   - job: build_and_release
