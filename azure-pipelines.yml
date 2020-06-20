@@ -38,7 +38,7 @@ jobs:
   - job: test
     displayName: Test
     pool:
-      vmImage: $(vmImageName)
+      vmImage: 'ubuntu-latest'
     steps:
       - script: sudo apt update
         displayName: 'Update repo'
@@ -61,6 +61,7 @@ jobs:
 
   - job: build_and_release
     displayName: Build and Release
+    dependsOn: test
     steps:
 
       - script: echo "##vso[task.setvariable variable=tag]$(tag)$(git describe --tags --long | sed '0,/-/s/-/./')"
