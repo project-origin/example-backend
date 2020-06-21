@@ -12,9 +12,6 @@ from originexample.db import ModelBase
 
 @pytest.fixture(scope='module')
 def session():
-    """
-    Returns a Session object with Ggo + User data seeded for testing
-    """
     with PostgresContainer('postgres:9.6') as psql:
         engine = create_engine(psql.get_connection_url())
         ModelBase.metadata.create_all(engine)
