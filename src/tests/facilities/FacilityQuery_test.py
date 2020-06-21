@@ -56,7 +56,6 @@ user4 = User(
 )
 
 
-
 @pytest.fixture(scope='module')
 def seeded_session(session):
     """

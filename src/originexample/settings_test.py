@@ -7,7 +7,7 @@ DEBUG = True
 # -- Project -----------------------------------------------------------------
 
 PROJECT_NAME = 'Example Backend'
-SERVICE_NAME = 'ExampleBackendService'
+SERVICE_NAME = 'ExampleBackend'
 SECRET = None
 PROJECT_URL = None
 LOGIN_CALLBACK_URL = None

@@ -161,7 +161,6 @@ class AgreementConsumer(GgoConsumer):
     def __init__(self, agreement):
         """
         :param TradeAgreement agreement:
-        :param sqlalchemy.orm.Session session:
         """
         self.agreement = agreement
         self.reference = agreement.public_id
@@ -206,9 +205,8 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
         :param TradeAgreement agreement:
         :param sqlalchemy.orm.Session session:
         """
+        super(AgreementLimitedToConsumptionConsumer, self).__init__(agreement)
         self.session = session
-        super(AgreementLimitedToConsumptionConsumer, self) \
-            .__init__(agreement)
 
     def __str__(self):
         return 'AgreementLimitedToConsumptionConsumer<%s>' % self.reference
@@ -234,7 +232,7 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
 
         desired_amount = 0
 
-        # TODO takewhile desired_amount <= min(ggo.amount, remaining_amount)
+        # TODO takewhile desired_amount < min(ggo.amount, remaining_amount)
         for facility in self.get_facilities():
             desired_amount += self.get_desired_amount_for_facility(
                 facility=facility,
