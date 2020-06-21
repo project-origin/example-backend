@@ -39,6 +39,8 @@ jobs:
     displayName: Test
     pool:
       vmImage: 'ubuntu-latest'
+    variables:
+      TEST: 1
     steps:
       - script: sudo apt update
         displayName: 'Update repo'
