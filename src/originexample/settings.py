@@ -1,10 +1,9 @@
 import os
 
 
-# -- Directories/paths -------------------------------------------------------
-
 __current_file = os.path.abspath(__file__)
 __current_folder = os.path.split(__current_file)[0]
+
 
 PROJECT_DIR = os.path.abspath(os.path.join(__current_folder, '..', '..'))
 VAR_DIR = os.path.join(PROJECT_DIR, 'var')
