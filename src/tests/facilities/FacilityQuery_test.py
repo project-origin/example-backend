@@ -1,13 +1,8 @@
-from unittest.mock import Mock
-
 import pytest
-import testing.postgresql
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from unittest.mock import Mock
 from datetime import datetime
 from itertools import product
 
-from originexample.db import ModelBase
 from originexample.auth import User
 from originexample.facilities import FacilityType, Facility, FacilityQuery
 
