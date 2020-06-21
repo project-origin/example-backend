@@ -107,9 +107,12 @@ Scope = NewType(
 
 @dataclass
 class VerifyLoginCallbackRequest:
-    scope: Scope
-    code: str
-    state: str
+    scope: Scope = field(default=None)
+    code: str = field(default=None)
+    state: str = field(default=None)
+    error: str = field(default=None)
+    error_hint: str = field(default=None)
+    error_description: str = field(default=None)
 
 
 # -- GetProfile request and response -----------------------------------------
