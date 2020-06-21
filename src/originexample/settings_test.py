@@ -7,7 +7,7 @@ DEBUG = True
 # -- Project -----------------------------------------------------------------
 
 PROJECT_NAME = 'Example Backend'
-SERVICE_NAME = None
+SERVICE_NAME = 'ExampleBackendService'
 SECRET = None
 PROJECT_URL = None
 LOGIN_CALLBACK_URL = None
@@ -16,7 +16,7 @@ CORS_ORIGINS = None
 
 # -- Database ----------------------------------------------------------------
 
-SQL_ALCHEMY_SETTINGS = None
+SQL_ALCHEMY_SETTINGS = {}
 DATABASE_URI = None
 
 
