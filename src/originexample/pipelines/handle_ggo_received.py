@@ -53,7 +53,8 @@ def handle_ggo_received(task, subject, ggo_json, session):
     """
     __log_extra = {
         'subject': subject,
-        'ggo_json': str(ggo_json),
+        'address': ggo_json['address'],
+        'ggo': str(ggo_json),
         'pipeline': 'handle_ggo_received',
         'task': 'handle_ggo_received',
     }
@@ -82,11 +83,12 @@ def handle_ggo_received(task, subject, ggo_json, session):
             logger.debug('Could not acquire lock, retrying...', extra=__log_extra)
             raise task.retry()
 
+        # TODO check availability of GGO before consuming
+
         try:
             controller.consume_ggo(user, ggo, session)
         except AccountServiceError as e:
             if e.status_code == 400:
-                logger.exception('Got BAD REQUEST from AccountService', extra=__log_extra)
                 raise
             else:
                 logger.exception('Failed to consume GGO, retrying...', extra=__log_extra)
