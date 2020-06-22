@@ -90,6 +90,17 @@ class LoginCallback(Controller):
             return_url = return_url.decode()
             redis.delete(request.state)
 
+        if request.error:
+            logger.error(f'Got login callback with ERROR', extra={
+                'scope': str(request.scope),
+                'code': request.code,
+                'state': request.state,
+                'error': str(request.error),
+                'error_hint': str(request.error_hint),
+                'error_description': str(request.error_description),
+            })
+            return redirect(return_url, 303)
+
         # Fetch token
         try:
             token = backend.fetch_token(request.code, request.state)

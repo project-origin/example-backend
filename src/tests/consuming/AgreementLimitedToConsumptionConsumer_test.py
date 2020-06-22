@@ -20,7 +20,7 @@ from originexample.consuming.consumers import AgreementLimitedToConsumptionConsu
     (200,        100,              0,                  0,              0,             0,               0),
     (200,        100,              0,                  0,              0,             None,            0),
 
-    (200,        100,              10,                 20,             20,            50,              30),
+    (200,        100,              10,                 20,             20,            50,              10),
 ))
 def test__AgreementLimitedToConsumptionConsumer__get_desired_amount__should_return_correct_amount(
         datahub_service_mock, account_service_mock,
