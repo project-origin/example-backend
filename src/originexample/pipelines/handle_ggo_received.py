@@ -69,7 +69,7 @@ def handle_ggo_received(task, subject, ggo_json, session):
     except orm.exc.NoResultFound:
         raise
     except Exception as e:
-        logger.exception('Failed to load User from database', extra=__log_extra)
+        logger.exception('Failed to load User from database, retrying...', extra=__log_extra)
         raise task.retry(exc=e)
 
     lock_key = ggo.begin.strftime('%Y-%m-%d-%H-%M')

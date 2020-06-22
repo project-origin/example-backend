@@ -86,7 +86,7 @@ def handle_measurement_published(task, subject, measurement_json, session):
     except orm.exc.NoResultFound:
         raise
     except Exception as e:
-        logger.exception('Failed to load User from database', extra=__log_extra)
+        logger.exception('Failed to load User from database, retrying...', extra=__log_extra)
         raise task.retry(exc=e)
 
     # TODO write this
@@ -104,7 +104,7 @@ def handle_measurement_published(task, subject, measurement_json, session):
             .is_active() \
             .all()
     except Exception as e:
-        logger.exception('Failed to load User from database', extra=__log_extra)
+        logger.exception('Failed to load Agreements from database, retrying...', extra=__log_extra)
         raise task.retry(exc=e)
 
     # TODO write this
@@ -154,7 +154,7 @@ def trigger_handle_ggo_received_pipeline(task, subject, begin, session):
     except orm.exc.NoResultFound:
         raise
     except Exception as e:
-        logger.exception('Failed to load User from database', extra=__log_extra)
+        logger.exception('Failed to load User from database, retrying...', extra=__log_extra)
         raise task.retry(exc=e)
 
     # Get stored GGOs from AccountService
@@ -162,7 +162,6 @@ def trigger_handle_ggo_received_pipeline(task, subject, begin, session):
         stored_ggos = get_stored_ggos(user.access_token, begin_dt)
     except AccountServiceError as e:
         if e.status_code == 400:
-            logger.exception('Got BAD REQUEST from AccountService', extra=__log_extra)
             raise
         else:
             logger.exception('Failed to get GGO list, retrying...', extra=__log_extra)
