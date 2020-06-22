@@ -1,9 +1,8 @@
 """
 TODO write this
 """
-from datetime import datetime
-
 import marshmallow_dataclass as md
+from datetime import datetime
 from celery import group
 from sqlalchemy import orm
 
@@ -76,7 +75,7 @@ def handle_measurement_published(task, subject, measurement_json, session):
     }
 
     measurement = measurement_schema.load(measurement_json)
-    tasks = []
+    subjects = set()
 
     # Get User from database
     try:
@@ -89,11 +88,8 @@ def handle_measurement_published(task, subject, measurement_json, session):
         logger.exception('Failed to load User from database, retrying...', extra=__log_extra)
         raise task.retry(exc=e)
 
-    # TODO write this
-    tasks.append(trigger_handle_ggo_received_pipeline.si(
-        subject=subject,
-        begin=measurement.begin.isoformat(),
-    ))
+    # Triggers handle_ggo_received for each GGO the user has stored (to retire)
+    subjects.add(subject)
 
     # Get inbound agreements from database
     try:
@@ -107,14 +103,20 @@ def handle_measurement_published(task, subject, measurement_json, session):
         logger.exception('Failed to load Agreements from database, retrying...', extra=__log_extra)
         raise task.retry(exc=e)
 
-    # TODO write this
+    # Triggers handle_ggo_received for each GGO the outbound user
+    # has stored (to transfer)
     for agreement in agreements:
-        tasks.append(trigger_handle_ggo_received_pipeline.si(
-            subject=agreement.user_from.sub,
-            begin=measurement.begin.isoformat(),
-        ))
+        subjects.add(agreement.user_from.sub)
 
-    # TODO write this
+    # Start
+    tasks = [
+        trigger_handle_ggo_received_pipeline.si(
+            subject=sub,
+            begin=measurement.begin.isoformat(),
+        )
+        for sub in subjects
+    ]
+
     group(*tasks).apply_async()
 
 
