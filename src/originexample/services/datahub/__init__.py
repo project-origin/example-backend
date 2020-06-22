@@ -1,2 +1,2 @@
-from .service import DataHubService
+from .service import *
 from .models import *

@@ -101,9 +101,8 @@ def handle_measurement_published(task, subject, measurement_json, session):
             .is_inbound_to(user) \
             .is_limited_to_consumption() \
             .is_operating_at(measurement.begin) \
-            .is_active()
-    except orm.exc.NoResultFound:
-        raise
+            .is_active() \
+            .all()
     except Exception as e:
         logger.exception('Failed to load User from database', extra=__log_extra)
         raise task.retry(exc=e)

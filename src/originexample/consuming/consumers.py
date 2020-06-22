@@ -18,7 +18,7 @@ from originexample.services.account import (
     GetTransferredAmountRequest,
     GetRetiredAmountRequest,
     GetTotalAmountRequest,
-)
+    GgoFilters)
 
 
 account_service = AccountService()
@@ -161,7 +161,6 @@ class AgreementConsumer(GgoConsumer):
     def __init__(self, agreement):
         """
         :param TradeAgreement agreement:
-        :param sqlalchemy.orm.Session session:
         """
         self.agreement = agreement
         self.reference = agreement.public_id
@@ -206,9 +205,8 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
         :param TradeAgreement agreement:
         :param sqlalchemy.orm.Session session:
         """
+        super(AgreementLimitedToConsumptionConsumer, self).__init__(agreement)
         self.session = session
-        super(AgreementLimitedToConsumptionConsumer, self) \
-            .__init__(agreement)
 
     def __str__(self):
         return 'AgreementLimitedToConsumptionConsumer<%s>' % self.reference
@@ -224,22 +222,19 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
         if remaining_amount <= 0:
             return 0
 
-        remaining_amount -= get_stored_amount(
-            token=self.agreement.user_to.access_token,
-            begin=ggo.begin,
-        )
-
-        if remaining_amount <= 0:
-            return 0
-
         desired_amount = 0
 
-        # TODO takewhile desired_amount <= min(ggo.amount, remaining_amount)
+        # TODO takewhile desired_amount < min(ggo.amount, remaining_amount)
         for facility in self.get_facilities():
             desired_amount += self.get_desired_amount_for_facility(
                 facility=facility,
                 begin=ggo.begin,
             )
+
+        desired_amount -= get_stored_amount(
+            token=self.agreement.user_to.access_token,
+            begin=ggo.begin,
+        )
 
         return max(0, min(ggo.amount, remaining_amount, desired_amount))
 
@@ -300,10 +295,12 @@ def get_retired_amount(token, gsrn, measurement):
     :param Measurement measurement:
     :rtype: int
     """
-    request = GetRetiredAmountRequest(filters=RetireFilters(
-        address=[measurement.address],
-        retire_gsrn=[gsrn],
-    ))
+    request = GetRetiredAmountRequest(
+        filters=RetireFilters(
+            address=[measurement.address],
+            retire_gsrn=[gsrn],
+        )
+    )
     response = account_service.get_retired_amount(token, request)
     return response.amount
 
@@ -333,7 +330,7 @@ def get_stored_amount(token, begin):
     :rtype: int
     """
     request = GetTotalAmountRequest(
-        filters=TransferFilters(
+        filters=GgoFilters(
             begin=begin,
             category=GgoCategory.STORED,
         )
