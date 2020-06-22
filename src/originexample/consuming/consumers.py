@@ -18,7 +18,7 @@ from originexample.services.account import (
     GetTransferredAmountRequest,
     GetRetiredAmountRequest,
     GetTotalAmountRequest,
-)
+    GgoFilters)
 
 
 account_service = AccountService()
@@ -222,14 +222,6 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
         if remaining_amount <= 0:
             return 0
 
-        remaining_amount -= get_stored_amount(
-            token=self.agreement.user_to.access_token,
-            begin=ggo.begin,
-        )
-
-        if remaining_amount <= 0:
-            return 0
-
         desired_amount = 0
 
         # TODO takewhile desired_amount < min(ggo.amount, remaining_amount)
@@ -238,6 +230,11 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
                 facility=facility,
                 begin=ggo.begin,
             )
+
+        desired_amount -= get_stored_amount(
+            token=self.agreement.user_to.access_token,
+            begin=ggo.begin,
+        )
 
         return max(0, min(ggo.amount, remaining_amount, desired_amount))
 
@@ -298,10 +295,12 @@ def get_retired_amount(token, gsrn, measurement):
     :param Measurement measurement:
     :rtype: int
     """
-    request = GetRetiredAmountRequest(filters=RetireFilters(
-        address=[measurement.address],
-        retire_gsrn=[gsrn],
-    ))
+    request = GetRetiredAmountRequest(
+        filters=RetireFilters(
+            address=[measurement.address],
+            retire_gsrn=[gsrn],
+        )
+    )
     response = account_service.get_retired_amount(token, request)
     return response.amount
 
@@ -331,7 +330,7 @@ def get_stored_amount(token, begin):
     :rtype: int
     """
     request = GetTotalAmountRequest(
-        filters=TransferFilters(
+        filters=GgoFilters(
             begin=begin,
             category=GgoCategory.STORED,
         )
