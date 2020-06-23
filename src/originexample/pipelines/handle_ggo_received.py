@@ -8,24 +8,27 @@ from originexample import logger
 from originexample.db import inject_session
 from originexample.tasks import celery_app, lock
 from originexample.auth import User, UserQuery
-from originexample.consuming import GgoConsumerController
+from originexample.consuming import (
+    GgoConsumerController,
+    ggo_is_available,
+)
 from originexample.services.account import (
     Ggo,
-    GgoFilters,
-    GgoCategory,
-    GetGgoListRequest,
     AccountService,
     AccountServiceError,
 )
 
+
+# Settings
 RETRY_DELAY = 10
 MAX_RETRIES = (24 * 60 * 60) / RETRY_DELAY
 LOCK_TIMEOUT = 2 * 60
 
-
+# Services / controllers
 controller = GgoConsumerController()
 account_service = AccountService()
 
+# JSON schemas
 ggo_schema = md.class_schema(Ggo)()
 
 
@@ -109,24 +112,3 @@ def handle_ggo_received(task, subject, address, ggo_json, session):
         except Exception as e:
             logger.exception('Failed to consume GGO, retrying...', extra=__log_extra)
             raise task.retry(exc=e)
-
-
-# -- Helper functions --------------------------------------------------------
-
-
-def ggo_is_available(token, ggo):
-    """
-    Check whether a GGO is available for transferring/retiring.
-
-    :param str token:
-    :param Ggo ggo:
-    :rtype: bool
-    """
-    request = GetGgoListRequest(
-        filters=GgoFilters(
-            address=[ggo.address],
-            category=GgoCategory.STORED,
-        )
-    )
-    response = account_service.get_ggo_list(token, request)
-    return len(response.results) > 0

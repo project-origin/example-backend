@@ -4,24 +4,22 @@ from originexample import logger
 from originexample.auth import User
 from originexample.agreements import TradeAgreement, AgreementQuery
 from originexample.facilities import Facility, FacilityQuery
-from originexample.services.datahub import DataHubService, GetMeasurementRequest
+from originexample.consuming.helpers import (
+    get_consumption,
+    get_retired_amount,
+    get_transferred_amount,
+    get_stored_amount,
+)
 from originexample.services.account import (
     Ggo,
-    GgoCategory,
     AccountService,
-    TransferFilters,
-    TransferDirection,
     TransferRequest,
     RetireRequest,
     ComposeGgoRequest,
-    GetTransferredAmountRequest,
-    GetTotalAmountRequest,
-    GgoFilters,
 )
 
 
 account_service = AccountService()
-datahub_service = DataHubService()
 
 
 class GgoConsumerController(object):
@@ -165,7 +163,7 @@ class AgreementConsumer(GgoConsumer):
         self.reference = agreement.public_id
 
     def __str__(self):
-        return 'AgreementConsumer<%s>' % self.agreement.public_id
+        return 'AgreementConsumer<%s>' % self.reference
 
     def consume(self, request, ggo, amount):
         """
@@ -175,7 +173,7 @@ class AgreementConsumer(GgoConsumer):
         """
         request.transfers.append(TransferRequest(
             amount=amount,
-            reference=self.agreement.public_id,
+            reference=self.reference,
             account=self.agreement.user_to.sub,
         ))
 
@@ -186,7 +184,7 @@ class AgreementConsumer(GgoConsumer):
         """
         transferred_amount = get_transferred_amount(
             token=self.agreement.user_from.access_token,
-            reference=self.agreement.public_id,
+            reference=self.reference,
             begin=ggo.begin,
         )
 
@@ -270,70 +268,3 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
             .belongs_to(self.agreement.user_to) \
             .is_retire_receiver() \
             .all()
-
-
-# -- Helper functions --------------------------------------------------------
-
-
-def get_consumption(token, gsrn, begin):
-    """
-    :param str token:
-    :param str gsrn:
-    :param datetime.datetime begin:
-    :rtype: Measurement
-    """
-    request = GetMeasurementRequest(gsrn=gsrn, begin=begin)
-    response = datahub_service.get_consumption(token, request)
-    return response.measurement
-
-
-def get_stored_amount(token, begin):
-    """
-    :param str token:
-    :param datetime.datetime begin:
-    :rtype: int
-    """
-    request = GetTotalAmountRequest(
-        filters=GgoFilters(
-            begin=begin,
-            category=GgoCategory.STORED,
-        )
-    )
-    response = account_service.get_total_amount(token, request)
-    return response.amount
-
-
-def get_retired_amount(token, gsrn, measurement):
-    """
-    :param str token:
-    :param str gsrn:
-    :param Measurement measurement:
-    :rtype: int
-    """
-    request = GetTotalAmountRequest(
-        filters=GgoFilters(
-            retire_gsrn=[gsrn],
-            retire_address=[measurement.address],
-            category=GgoCategory.RETIRED,
-        )
-    )
-    response = account_service.get_total_amount(token, request)
-    return response.amount
-
-
-def get_transferred_amount(token, reference, begin):
-    """
-    :param str token:
-    :param str reference:
-    :param datetime.datetime begin:
-    :rtype: int
-    """
-    request = GetTransferredAmountRequest(
-        direction=TransferDirection.OUTBOUND,
-        filters=TransferFilters(
-            reference=[reference],
-            begin=begin,
-        )
-    )
-    response = account_service.get_transferred_amount(token, request)
-    return response.amount
