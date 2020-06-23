@@ -1,11 +1,14 @@
 import pytest
 from unittest.mock import Mock, patch
+from datetime import timezone, datetime
 
 from originexample.consuming.consumers import AgreementLimitedToConsumptionConsumer
 
 
-@patch('originexample.consuming.consumers.account_service')
-@patch('originexample.consuming.consumers.datahub_service')
+@patch('originexample.consuming.consumers.get_consumption')
+@patch('originexample.consuming.consumers.get_transferred_amount')
+@patch('originexample.consuming.consumers.get_retired_amount')
+@patch('originexample.consuming.consumers.get_stored_amount')
 @pytest.mark.parametrize(
     'ggo_amount, agreement_amount, transferred_amount, retired_amount, stored_amount, measured_amount, expected_amount', (
     (200,        100,              0,                  0,              0,             100,             100),
@@ -23,31 +26,49 @@ from originexample.consuming.consumers import AgreementLimitedToConsumptionConsu
     (200,        100,              10,                 20,             20,            50,              10),
 ))
 def test__AgreementLimitedToConsumptionConsumer__get_desired_amount__should_return_correct_amount(
-        datahub_service_mock, account_service_mock,
+        get_stored_amount_mock, get_retired_amount_mock, get_transferred_amount_mock, get_consumption_mock,
         ggo_amount, agreement_amount, transferred_amount, retired_amount, stored_amount, measured_amount, expected_amount):
 
-    agreement = Mock(calculated_amount=agreement_amount)
-    facilities = [
-        Mock(gsrn='GSRN1'),
-        Mock(gsrn='GSRN2'),
-    ]
+    begin = datetime(2020, 1, 1, 0, 0, tzinfo=timezone.utc)
+    agreement = Mock(public_id='PUBLIC_ID', calculated_amount=agreement_amount)
+    ggo = Mock(begin=begin, amount=ggo_amount)
+    facility1 = Mock(gsrn='GSRN1')
+    facility2 = Mock(gsrn='GSRN2')
+    facilities = [facility1, facility2]
 
-    account_service_mock.get_transferred_amount.return_value = Mock(amount=transferred_amount)
-    account_service_mock.get_retired_amount.return_value = Mock(amount=(retired_amount / len(facilities)))
-    account_service_mock.get_total_amount.return_value = Mock(amount=stored_amount)
+    get_transferred_amount_mock.return_value = transferred_amount
+    get_retired_amount_mock.return_value = retired_amount / len(facilities)
+    get_stored_amount_mock.return_value = stored_amount
+
     if measured_amount is None:
-        datahub_service_mock.get_consumption.return_value = Mock(measurement=None)
+        measurement = None
+        get_consumption_mock.return_value = None
     else:
-        datahub_service_mock.get_consumption.return_value = Mock(measurement=Mock(amount=(measured_amount / len(facilities))))
+        measurement = Mock(amount=(measured_amount / len(facilities)))
+        get_consumption_mock.return_value = measurement
 
     uut = AgreementLimitedToConsumptionConsumer(agreement=agreement, session=Mock())
     uut.get_facilities = Mock(return_value=facilities)
 
     # Act
-    desired_amount = uut.get_desired_amount(Mock(amount=ggo_amount))
+    desired_amount = uut.get_desired_amount(ggo)
 
     # Assert
     assert desired_amount == expected_amount
+
+    get_transferred_amount_mock.assert_called_once_with(token=agreement.user_from.access_token, reference='PUBLIC_ID', begin=begin)
+    get_stored_amount_mock.assert_called_once_with(token=agreement.user_to.access_token, begin=begin)
+
+    assert get_consumption_mock.call_count == 2
+    get_consumption_mock.assert_any_call(token=facility1.user.access_token, gsrn='GSRN1', begin=begin)
+    get_consumption_mock.assert_any_call(token=facility2.user.access_token, gsrn='GSRN2', begin=begin)
+
+    if measured_amount is None:
+        get_retired_amount_mock.assert_not_called()
+    else:
+        assert get_retired_amount_mock.call_count == 2
+        get_retired_amount_mock.assert_any_call(token=facility1.user.access_token, gsrn='GSRN1', measurement=measurement)
+        get_retired_amount_mock.assert_any_call(token=facility2.user.access_token, gsrn='GSRN2', measurement=measurement)
 
 
 def test__AgreementLimitedToConsumptionConsumer__consume__should_append_transfers():
