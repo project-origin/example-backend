@@ -12,13 +12,12 @@ from originexample.services.account import (
     TransferFilters,
     TransferDirection,
     TransferRequest,
-    RetireFilters,
     RetireRequest,
     ComposeGgoRequest,
     GetTransferredAmountRequest,
-    GetRetiredAmountRequest,
     GetTotalAmountRequest,
-    GgoFilters)
+    GgoFilters,
+)
 
 
 account_service = AccountService()
@@ -72,7 +71,7 @@ class GgoConsumerController(object):
             assigned_amount = min(remaining_amount, desired_amount)
             remaining_amount -= assigned_amount
 
-            if assigned_amount:
+            if assigned_amount > 0:
                 consumer.consume(request, ggo, assigned_amount)
 
         if remaining_amount < ggo.amount:
@@ -288,6 +287,22 @@ def get_consumption(token, gsrn, begin):
     return response.measurement
 
 
+def get_stored_amount(token, begin):
+    """
+    :param str token:
+    :param datetime.datetime begin:
+    :rtype: int
+    """
+    request = GetTotalAmountRequest(
+        filters=GgoFilters(
+            begin=begin,
+            category=GgoCategory.STORED,
+        )
+    )
+    response = account_service.get_total_amount(token, request)
+    return response.amount
+
+
 def get_retired_amount(token, gsrn, measurement):
     """
     :param str token:
@@ -295,13 +310,14 @@ def get_retired_amount(token, gsrn, measurement):
     :param Measurement measurement:
     :rtype: int
     """
-    request = GetRetiredAmountRequest(
-        filters=RetireFilters(
-            address=[measurement.address],
+    request = GetTotalAmountRequest(
+        filters=GgoFilters(
             retire_gsrn=[gsrn],
+            retire_address=[measurement.address],
+            category=GgoCategory.RETIRED,
         )
     )
-    response = account_service.get_retired_amount(token, request)
+    response = account_service.get_total_amount(token, request)
     return response.amount
 
 
@@ -320,20 +336,4 @@ def get_transferred_amount(token, reference, begin):
         )
     )
     response = account_service.get_transferred_amount(token, request)
-    return response.amount
-
-
-def get_stored_amount(token, begin):
-    """
-    :param str token:
-    :param datetime.datetime begin:
-    :rtype: int
-    """
-    request = GetTotalAmountRequest(
-        filters=GgoFilters(
-            begin=begin,
-            category=GgoCategory.STORED,
-        )
-    )
-    response = account_service.get_total_amount(token, request)
     return response.amount
