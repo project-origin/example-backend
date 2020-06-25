@@ -638,24 +638,16 @@ class ExportGgoListCSV(Controller):
         """
         :param str token:
         :param GgoFilters filters:
-        :rtype: collections.abc.Iterable[Ggo]
+        :rtype: list[Ggo]
         """
-        offset = 0
-        limit = 100
-
-        while 1:
-            response = account_service.get_ggo_list(token, acc.GetGgoListRequest(
-                offset=offset,
-                limit=limit,
+        response = account_service.get_ggo_list(
+            token=token,
+            request=acc.GetGgoListRequest(
                 filters=filters,
-            ))
+            ),
+        )
 
-            yield from response.results
-
-            offset += limit
-
-            if offset >= response.total:
-                break
+        return response.results
 
 
 class ExportMeasurementsCSV(Controller):

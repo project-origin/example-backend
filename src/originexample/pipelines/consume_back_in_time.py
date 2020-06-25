@@ -76,27 +76,20 @@ def consume_back_in_time(subject, begin_from, begin_to, session):
         )
     )
 
-    tasks = []
-    offset = 0
-    limit = 100
-
-    while 1:
-        response = service.get_ggo_list(user.access_token, GetGgoListRequest(
-            offset=offset,
-            limit=limit,
+    response = service.get_ggo_list(
+        token=user.access_token,
+        request=GetGgoListRequest(
             filters=filters,
-        ))
+        ),
+    )
 
-        for ggo in response.results:
-            tasks.append(handle_ggo_received.s(
-                subject=user.sub,
-                ggo_json=ggo_schema.dump(ggo),
-            ))
-
-        offset += limit
-
-        if offset >= response.total:
-            break
+    tasks = [
+        handle_ggo_received.s(
+            subject=user.sub,
+            ggo_json=ggo_schema.dump(ggo),
+        )
+        for ggo in response.results
+    ]
 
     if tasks:
         group(*tasks).apply_async()
