@@ -24,8 +24,6 @@ from .models import (
     GetTransferSummaryResponse,
     GetTransferredAmountRequest,
     GetTransferredAmountResponse,
-    GetRetiredAmountRequest,
-    GetRetiredAmountResponse,
     WebhookSubscribeRequest,
     WebhookSubscribeResponse,
 )
@@ -132,20 +130,6 @@ class AccountService(object):
             response_schema=md.class_schema(GetGgoSummaryResponse),
         )
 
-    def get_total_amount(self, token, request):
-        """
-        :param str token:
-        :param GetTotalAmountRequest request:
-        :rtype: GetTotalAmountResponse
-        """
-        return self.invoke(
-            token=token,
-            path='/ggo/get-total-amount',
-            request=request,
-            request_schema=md.class_schema(GetTotalAmountRequest),
-            response_schema=md.class_schema(GetTotalAmountResponse),
-        )
-
     def compose(self, token, request):
         """
         :param str token:
@@ -188,18 +172,18 @@ class AccountService(object):
             response_schema=md.class_schema(GetTransferredAmountResponse),
         )
 
-    def get_retired_amount(self, token, request):
+    def get_total_amount(self, token, request):
         """
         :param str token:
-        :param GetRetiredAmountRequest request:
-        :rtype: GetRetiredAmountResponse
+        :param GetTotalAmountRequest request:
+        :rtype: GetTotalAmountResponse
         """
         return self.invoke(
             token=token,
-            path='/retire/get-retired-amount',
+            path='/ggo/get-total-amount',
             request=request,
-            request_schema=md.class_schema(GetRetiredAmountRequest),
-            response_schema=md.class_schema(GetRetiredAmountResponse),
+            request_schema=md.class_schema(GetTotalAmountRequest),
+            response_schema=md.class_schema(GetTotalAmountResponse),
         )
 
     def webhook_on_ggo_received_subscribe(self, token):
