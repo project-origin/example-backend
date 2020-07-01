@@ -1,7 +1,6 @@
+import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime, timezone
-
-import pytest
 
 from originexample.services.account import (
     GgoCategory,
