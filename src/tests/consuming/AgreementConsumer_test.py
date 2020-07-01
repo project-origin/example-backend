@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime, timezone
 
+
 from originexample.consuming.consumers import AgreementConsumer
 
 
@@ -34,7 +35,11 @@ def test__AgreementConsumer__get_desired_amount__should_return_correct_amount(
     # Assert
     assert desired_amount == expected_amount
 
-    get_transferred_amount_mock.assert_called_once_with(token=agreement.user_from.access_token, reference='PUBLIC_ID', begin=begin)
+    get_transferred_amount_mock.assert_called_once_with(
+        token=agreement.user_from.access_token,
+        reference='PUBLIC_ID',
+        begin=begin,
+    )
 
 
 def test__AgreementConsumer__consume__should_append_transfers():

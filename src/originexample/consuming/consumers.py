@@ -26,6 +26,7 @@ class GgoConsumerController(object):
     """
     TODO
     """
+
     def get_consumers(self, user, ggo, session):
         """
         :param User user:
@@ -33,15 +34,37 @@ class GgoConsumerController(object):
         :param sqlalchemy.orm.Session session:
         :rtype: collections.abc.Iterable[GgoConsumer]
         """
+        yield from self.get_retire_consumers(user, ggo, session)
+        yield from self.get_agreement_consumers(user, ggo, session)
+
+    def get_retire_consumers(self, user, ggo, session):
+        """
+        TODO test this
+
+        :param User user:
+        :param Ggo ggo:
+        :param sqlalchemy.orm.Session session:
+        :rtype: collections.abc.Iterable[RetiringConsumer]
+        """
         facilities = FacilityQuery(session) \
             .belongs_to(user) \
             .is_retire_receiver() \
             .is_eligible_to_retire(ggo) \
-            .order_by(Facility.retiring_priority.asc())
+            .order_by(Facility.retiring_priority.asc()) \
+            .all()
 
         for facility in facilities:
             yield RetiringConsumer(facility)
 
+    def get_agreement_consumers(self, user, ggo, session):
+        """
+        TODO test this
+
+        :param User user:
+        :param Ggo ggo:
+        :param sqlalchemy.orm.Session session:
+        :rtype: collections.abc.Iterable[AgreementConsumer]
+        """
         agreements = AgreementQuery(session) \
             .is_outbound_from(user) \
             .is_elibigle_to_trade(ggo) \
@@ -222,7 +245,7 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
         desired_amount = 0
 
         # TODO takewhile desired_amount < min(ggo.amount, remaining_amount)
-        for facility in self.get_facilities():
+        for facility in self.get_facilities(ggo):
             desired_amount += self.get_desired_amount_for_facility(
                 facility=facility,
                 begin=ggo.begin,
@@ -260,11 +283,13 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
 
         return max(0, remaining_amount)
 
-    def get_facilities(self):
+    def get_facilities(self, ggo):
         """
+        :param Ggo ggo:
         :rtype: list[Facility]
         """
         return FacilityQuery(self.session) \
             .belongs_to(self.agreement.user_to) \
             .is_retire_receiver() \
+            .is_eligible_to_retire(ggo) \
             .all()
