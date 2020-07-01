@@ -87,6 +87,7 @@ def consume_back_in_time(subject, begin_from, begin_to, session):
         handle_ggo_received.s(
             subject=user.sub,
             ggo_json=ggo_schema.dump(ggo),
+            address=ggo.address,
         )
         for ggo in response.results
     ]
