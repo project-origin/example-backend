@@ -272,17 +272,17 @@ class DataHubService(object):
             response_schema=md.class_schema(WebhookSubscribeResponse),
         )
 
-    def webhook_on_meteringpoints_available_subscribe(self, token):
+    def webhook_on_meteringpoint_available_subscribe(self, token):
         """
         :param str token:
         :rtype: WebhookSubscribeResponse
         """
-        url = f'{PROJECT_URL}/webhook/on-meteringpoints-available'
+        callback_url = f'{PROJECT_URL}/webhook/on-meteringpoint-available'
 
         return self.invoke(
             token=token,
-            path='/webhook/on-meteringpoints-available/subscribe',
-            request=WebhookSubscribeRequest(url=url, secret=WEBHOOK_SECRET),
+            path='/webhook/on-meteringpoint-available/subscribe',
+            request=WebhookSubscribeRequest(url=callback_url, secret=WEBHOOK_SECRET),
             request_schema=md.class_schema(WebhookSubscribeRequest),
             response_schema=md.class_schema(WebhookSubscribeResponse),
         )
