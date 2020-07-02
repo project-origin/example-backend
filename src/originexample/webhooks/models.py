@@ -1,21 +1,28 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from originexample.services.datahub import Measurement
 from originexample.services.account import Ggo
+from originexample.services.datahub import Measurement, MeteringPoint
 
 
 @dataclass
 class OnGgoReceivedWebhookRequest:
-    ggo: Ggo
     sub: str
+    ggo: Ggo
 
 
 @dataclass
 class OnMeasurementPublishedWebhookRequest:
-    measurement: Measurement
     sub: str
+    measurement: Measurement
+
+
+@dataclass
+class OnMeteringPointAvailableWebhookRequest:
+    sub: str
+    meteringpoint: MeteringPoint
 
 
 @dataclass
 class OnMeteringPointsAvailableWebhookRequest:
+    # TODO remove
     sub: str
