@@ -56,9 +56,12 @@ urls = (
     # Webhooks
     ('/webhook/on-ggo-received', webhooks.OnGgoReceivedWebhook()),
     ('/webhook/on-measurement-published', webhooks.OnMeasurementPublishedWebhook()),
-    ('/webhook/on-meteringpoints-available', webhooks.OnMeteringPointsAvailableWebhook()),
+    ('/webhook/on-meteringpoint-available', webhooks.OnMeteringPointAvailableWebhook()),
 
     # Misc
     ('/support/submit-support-enquiry', support.SubmitSupportEnquiry()),
+
+    # TODO remove
+    ('/webhook/on-meteringpoints-available', webhooks.OnMeteringPointsAvailableWebhook()),
 
 )
