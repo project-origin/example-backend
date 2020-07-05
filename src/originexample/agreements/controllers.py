@@ -255,6 +255,7 @@ class GetAgreementSummary(AbstractAgreementController):
             request=request,
             token=user.access_token,
             resolution=resolution,
+            utc_offset=request.utc_offset,
             direction=direction,
             reference=agreement.public_id if agreement else None,
         )
@@ -265,11 +266,13 @@ class GetAgreementSummary(AbstractAgreementController):
             ggos=ggos,
         )
 
-    def get_agreement_summary(self, request, token, resolution, direction=None, reference=None):
+    def get_agreement_summary(self, request, token, resolution, utc_offset,
+                              direction=None, reference=None):
         """
         :param GetMeasurementsRequest request:
         :param str token:
         :param SummaryResolution resolution:
+        :param int utc_offset:
         :param TransferDirection direction:
         :param str reference:
         :rtype: (list[DataSet], list[str])
@@ -284,6 +287,7 @@ class GetAgreementSummary(AbstractAgreementController):
         response = account.get_transfer_summary(token, GetTransferSummaryRequest(
             direction=direction,
             resolution=resolution,
+            utc_offset=utc_offset,
             fill=fill,
             grouping=[SummaryGrouping.TECHNOLOGY],
             filters=TransferFilters(

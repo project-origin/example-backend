@@ -45,6 +45,7 @@ class GgoDistributionBundle:
 
 @dataclass
 class GetGgoDistributionsRequest:
+    utc_offset: int = field(metadata=dict(required=False, missing=0, data_key='utcOffset'))
     date_range: DateRange = field(metadata=dict(data_key='dateRange'))
 
 
@@ -59,6 +60,7 @@ class GetGgoDistributionsResponse:
 
 @dataclass
 class GetGgoSummaryRequest:
+    utc_offset: int = field(metadata=dict(required=False, missing=0, data_key='utcOffset'))
     category: GgoCategory = field(metadata=dict(by_value=True))
     date_range: DateRange = field(metadata=dict(data_key='dateRange'))
 
@@ -75,6 +77,7 @@ class GetGgoSummaryResponse:
 
 @dataclass
 class GetMeasurementsRequest:
+    utc_offset: int = field(metadata=dict(required=False, missing=0, data_key='utcOffset'))
     date_range: DateRange = field(metadata=dict(data_key='dateRange'))
     filters: FacilityFilters = field(default=None)
     measurement_type: MeasurementType = field(default=None, metadata=dict(data_key='measurementType', by_value=True))
