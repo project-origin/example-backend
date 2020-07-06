@@ -131,6 +131,7 @@ class GetMeasurementSummaryRequest:
     filters: MeasurementFilters
     fill: bool
     grouping: List[str] = field(default_factory=list)
+    utc_offset: int = field(default=0, metadata=dict(data_key='utcOffset'))
 
 
 @dataclass
