@@ -10,24 +10,35 @@ from originexample.consuming.consumers import AgreementLimitedToConsumptionConsu
 @patch('originexample.consuming.consumers.get_retired_amount')
 @patch('originexample.consuming.consumers.get_stored_amount')
 @pytest.mark.parametrize(
-    'ggo_amount, agreement_amount, transferred_amount, retired_amount, stored_amount, measured_amount, expected_amount', (
-    (200,        100,              0,                  0,              0,             100,             100),
-    (200,        100,              50,                 0,              0,             100,             50),
-    (200,        100,              0,                  50,             0,             100,             50),
-    (200,        100,              0,                  0,              50,            100,             50),
+    'ggo_amount, agreement_amount, transferred_amount, retired_amount, stored_amount, measured_amount, expected_amount, already_transferred_amount', (
+    (200,        100,              0,                  0,              0,             100,             100,             0),
+    (200,        100,              50,                 0,              0,             100,             50,              0),
+    (200,        100,              0,                  50,             0,             100,             50,              0),
+    (200,        100,              0,                  0,              50,            100,             50,              0),
+    (50,         100,              0,                  0,              0,             100,             50,              0),
+    (200,        100,              0,                  0,              0,             50,              50,              0),
+    (200,        100,              0,                  0,              0,             200,             100,             0),
+    (100,        200,              0,                  0,              0,             200,             100,             0),
+    (200,        100,              0,                  0,              0,             0,               0,               0),
+    (200,        100,              0,                  0,              0,             None,            0,               0),
+    (200,        100,              10,                 20,             20,            50,              10,              0),
 
-    (50,         100,              0,                  0,              0,             100,             50),
-    (200,        100,              0,                  0,              0,             50,              50),
-    (200,        100,              0,                  0,              0,             200,             100),
-    (100,        200,              0,                  0,              0,             200,             100),
-    (200,        100,              0,                  0,              0,             0,               0),
-    (200,        100,              0,                  0,              0,             None,            0),
-
-    (200,        100,              10,                 20,             20,            50,              10),
+    (200,        100,              0,                  0,              0,             100,             60,              40),
+    (200,        100,              50,                 0,              0,             100,             50,              40),
+    (200,        100,              0,                  50,             0,             100,             10,              40),
+    (200,        100,              0,                  0,              50,            100,             10,              40),
+    (50,         100,              0,                  0,              0,             100,             50,              40),
+    (200,        100,              0,                  0,              0,             50,              10,              40),
+    (200,        100,              0,                  0,              0,             200,             100,             40),
+    (100,        200,              0,                  0,              0,             200,             100,             40),
+    (200,        100,              0,                  0,              0,             0,               0,               40),
+    (200,        100,              0,                  0,              0,             None,            0,               40),
+    (200,        100,              10,                 20,             20,            50,              0,               40),
 ))
 def test__AgreementLimitedToConsumptionConsumer__get_desired_amount__should_return_correct_amount(
         get_stored_amount_mock, get_retired_amount_mock, get_transferred_amount_mock, get_consumption_mock,
-        ggo_amount, agreement_amount, transferred_amount, retired_amount, stored_amount, measured_amount, expected_amount):
+        ggo_amount, agreement_amount, transferred_amount, retired_amount, stored_amount,
+        measured_amount, expected_amount, already_transferred_amount):
 
     begin = datetime(2020, 1, 1, 0, 0, tzinfo=timezone.utc)
     agreement = Mock(public_id='PUBLIC_ID', calculated_amount=agreement_amount)
@@ -51,7 +62,7 @@ def test__AgreementLimitedToConsumptionConsumer__get_desired_amount__should_retu
     uut.get_facilities = Mock(return_value=facilities)
 
     # Act
-    desired_amount = uut.get_desired_amount(ggo)
+    desired_amount = uut.get_desired_amount(ggo, already_transferred_amount)
 
     # Assert
     assert desired_amount == expected_amount
