@@ -192,6 +192,7 @@ class GetAgreementDetailsResponse:
 
 @dataclass
 class GetAgreementSummaryRequest:
+    utc_offset: int = field(metadata=dict(required=False, missing=0, data_key='utcOffset'))
     date_range: DateRange = field(default=None, metadata=dict(data_key='dateRange'))
     public_id: str = field(default=None, metadata=dict(data_key='id'))
     direction: AgreementDirection = field(default=None, metadata=dict(by_value=True))
