@@ -307,9 +307,9 @@ def test__AgreementQuery__is_active__returns_correct_agreements(seeded_session):
 
 @pytest.mark.parametrize('ggo_technology, ggo_begin', (
     ('Wind', datetime(2020, 1, 1, 0, 0, 0, tzinfo=timezone.utc)),
-    ('Wind', datetime(2020, 1, 31, 23, 0, 0, tzinfo=timezone.utc)),
+    ('Wind', datetime(2020, 1, 31, 21, 0, 0, tzinfo=timezone.utc)),
     ('Wind', datetime(2020, 2, 1, 0, 0, 0, tzinfo=timezone.utc)),
-    ('Wind', datetime(2020, 2, 29, 23, 0, 0, tzinfo=timezone.utc)),
+    ('Wind', datetime(2020, 2, 29, 21, 0, 0, tzinfo=timezone.utc)),
     ('Wind', datetime(2020, 3, 1, 0, 0, 0, tzinfo=timezone.utc)),
     ('Wind', datetime(2020, 3, 31, 21, 0, 0, tzinfo=timezone.utc)),
 ))
