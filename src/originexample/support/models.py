@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
+from marshmallow.validate import Email
 
 
 @dataclass
 class SubmitSupportEnquiryRequest:
-    email: str
+    email: str = field(metadata=dict(validate=Email()))
     phone: str
     message: str
 
