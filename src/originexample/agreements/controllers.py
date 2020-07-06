@@ -458,8 +458,8 @@ class RespondToProposal(Controller):
 
             start_consume_back_in_time_pipeline(
                 user=agreement.user_from,
-                begin_from=datetime.fromordinal(agreement.date_from.toordinal()),
-                begin_to=datetime.fromordinal(agreement.date_to.toordinal()) + timedelta(days=1),
+                begin_from=datetime.fromordinal(agreement.date_from.toordinal()) - timedelta(days=2),
+                begin_to=datetime.fromordinal(agreement.date_to.toordinal()) + timedelta(days=2),
             )
         else:
             agreement.decline_proposal()
