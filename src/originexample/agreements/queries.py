@@ -1,3 +1,4 @@
+import pytz
 import sqlalchemy as sa
 from sqlalchemy import text
 
@@ -193,9 +194,11 @@ class AgreementQuery(object):
         :param datetime.datetime begin:
         :rtype: AgreementQuery
         """
+        b = begin.astimezone(pytz.timezone('Europe/Copenhagen')).date()
+
         return AgreementQuery(self.session, self.q.filter(
-            TradeAgreement.date_from <= begin.date(),
-            TradeAgreement.date_to >= begin.date(),
+            TradeAgreement.date_from <= b,
+            TradeAgreement.date_to >= b,
         ))
 
     def is_elibigle_to_trade(self, ggo):
@@ -204,9 +207,11 @@ class AgreementQuery(object):
 
         :rtype: AgreementQuery
         """
+        b = ggo.begin.astimezone(pytz.timezone('Europe/Copenhagen')).date()
+
         return AgreementQuery(self.session, self.q.filter(
-            TradeAgreement.date_from <= ggo.begin.date(),
-            TradeAgreement.date_to >= ggo.begin.date(),
+            TradeAgreement.date_from <= b,
+            TradeAgreement.date_to >= b,
             sa.or_(
                 TradeAgreement.technology.is_(None),
                 TradeAgreement.technology == ggo.technology,

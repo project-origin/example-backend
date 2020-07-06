@@ -124,6 +124,7 @@ class GetGgoSummaryRequest:
     filters: GgoFilters
     fill: bool
     grouping: List[str]
+    utc_offset: int = field(default=0, metadata=dict(data_key='utcOffset'))
 
 
 @dataclass
@@ -157,6 +158,7 @@ class GetTransferSummaryRequest:
     fill: bool
     grouping: List[str] = field(default_factory=list)
     direction: TransferDirection = field(default=None, metadata=dict(by_value=True))
+    utc_offset: int = field(default=0, metadata=dict(data_key='utcOffset'))
 
 
 @dataclass

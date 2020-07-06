@@ -67,13 +67,15 @@ class GetGgoDistributions(Controller):
         """
         begin_range = DateTimeRange.from_date_range(request.date_range)
 
+        args = (user.access_token, begin_range, request.utc_offset)
+
         bundle = GgoDistributionBundle(
-            issued=self.get_issued(user.access_token, begin_range),
-            stored=self.get_stored(user.access_token, begin_range),
-            retired=self.get_retired(user.access_token, begin_range),
-            expired=self.get_expired(user.access_token, begin_range),
-            inbound=self.get_inbound(user.access_token, begin_range),
-            outbound=self.get_outbound(user.access_token, begin_range),
+            issued=self.get_issued(*args),
+            stored=self.get_stored(*args),
+            retired=self.get_retired(*args),
+            expired=self.get_expired(*args),
+            inbound=self.get_inbound(*args),
+            outbound=self.get_outbound(*args),
         )
 
         return GetGgoDistributionsResponse(
@@ -81,46 +83,37 @@ class GetGgoDistributions(Controller):
             distributions=bundle,
         )
 
-    def get_issued(self, token, begin_range):
+    def get_issued(self, *args, **kwargs):
         """
-        :param str token:
-        :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
         return self.get_distributions(partial(
             self.get_ggo_summary,
-            token,
-            begin_range,
             acc.GgoCategory.ISSUED,
+            *args, **kwargs,
         ))
 
-    def get_stored(self, token, begin_range):
+    def get_stored(self, *args, **kwargs):
         """
-        :param str token:
-        :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
         return self.get_distributions(partial(
             self.get_ggo_summary,
-            token,
-            begin_range,
             acc.GgoCategory.STORED,
+            *args, **kwargs,
         ))
 
-    def get_retired(self, token, begin_range):
+    def get_retired(self, *args, **kwargs):
         """
-        :param str token:
-        :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
         return self.get_distributions(partial(
             self.get_ggo_summary,
-            token,
-            begin_range,
             acc.GgoCategory.RETIRED,
+            *args, **kwargs,
         ))
 
-    def get_expired(self, token, begin_range):
+    def get_expired(self, *args, **kwargs):
         """
         :param str token:
         :param DateTimeRange begin_range:
@@ -128,25 +121,21 @@ class GetGgoDistributions(Controller):
         """
         return self.get_distributions(partial(
             self.get_ggo_summary,
-            token,
-            begin_range,
             acc.GgoCategory.EXPIRED,
+            *args, **kwargs,
         ))
 
-    def get_inbound(self, token, begin_range):
+    def get_inbound(self, *args, **kwargs):
         """
-        :param str token:
-        :param DateTimeRange begin_range:
         :rtype: GgoDistribution
         """
         return self.get_distributions(partial(
             self.get_transfer_summary,
-            token,
-            begin_range,
             acc.TransferDirection.INBOUND,
+            *args, **kwargs,
         ))
 
-    def get_outbound(self, token, begin_range):
+    def get_outbound(self, *args, **kwargs):
         """
         :param str token:
         :param DateTimeRange begin_range:
@@ -154,9 +143,8 @@ class GetGgoDistributions(Controller):
         """
         return self.get_distributions(partial(
             self.get_transfer_summary,
-            token,
-            begin_range,
             acc.TransferDirection.OUTBOUND,
+            *args, **kwargs,
         ))
 
     def get_distributions(self, get_summary_groups):
@@ -175,34 +163,40 @@ class GetGgoDistributions(Controller):
 
         return distribution
 
-    def get_ggo_summary(self, token, begin_range, category):
+    def get_ggo_summary(self, category, token, begin_range, utc_offset):
         """
         Get either Issued, Stored, Retired and Expired from GgoSummary.
 
+        :param GgoCategory category:
         :param str token:
         :param DateTimeRange begin_range:
-        :param GgoCategory category:
+        :param int utc_offset:
         :rtype: List[SummaryGroup]
         """
-        response = account_service.get_ggo_summary(token, acc.GetGgoSummaryRequest(
-            resolution=SummaryResolution.ALL,
-            fill=False,
-            grouping=[acc.SummaryGrouping.TECHNOLOGY],
-            filters=acc.GgoFilters(
-                category=category,
-                begin_range=begin_range,
-            ),
-        ))
+        response = account_service.get_ggo_summary(
+            token=token,
+            request=acc.GetGgoSummaryRequest(
+                utc_offset=utc_offset,
+                resolution=SummaryResolution.ALL,
+                fill=False,
+                grouping=[acc.SummaryGrouping.TECHNOLOGY],
+                filters=acc.GgoFilters(
+                    category=category,
+                    begin_range=begin_range,
+                ),
+            )
+        )
 
         return response.groups
 
-    def get_transfer_summary(self, token, begin_range, direction):
+    def get_transfer_summary(self, direction, token, begin_range, utc_offset):
         """
         Get either Inbound and Outbound from TransferSummary.
 
+        :param TransferDirection direction:
         :param str token:
         :param DateTimeRange begin_range:
-        :param TransferDirection direction:
+        :param int utc_offset:
         :rtype: List[SummaryGroup]
         """
         response = account_service.get_transfer_summary(token, acc.GetTransferSummaryRequest(
@@ -245,7 +239,7 @@ class GetGgoSummary(Controller):
         )
 
         ggos, labels = self.get_ggo_summary(
-            user.access_token, resolution, ggo_filters)
+            user.access_token, resolution, ggo_filters, request.utc_offset)
 
         return GetGgoSummaryResponse(
             success=True,
@@ -253,14 +247,16 @@ class GetGgoSummary(Controller):
             ggos=ggos,
         )
 
-    def get_ggo_summary(self, token, resolution, filters):
+    def get_ggo_summary(self, token, resolution, filters, utc_offset):
         """
         :param str token:
         :param SummaryResolution resolution:
         :param GgoFilters filters:
+        :param int utc_offset:
         :rtype: (list[DataSet], list[str])
         """
         request = acc.GetGgoSummaryRequest(
+            utc_offset=utc_offset,
             filters=filters,
             resolution=resolution,
             grouping=[acc.SummaryGrouping.TECHNOLOGY],
@@ -311,11 +307,11 @@ class GetMeasurements(Controller):
             raise RuntimeError('Should NOT have happened!')
 
         ggos, labels = self.get_ggo_summary(
-            user.access_token, resolution, ggo_filters)
+            user.access_token, resolution, ggo_filters, request.utc_offset)
 
         measurements = self.get_measurements(
             user.access_token, request.measurement_type,
-            resolution, begin_range, gsrn)
+            resolution, begin_range, gsrn, request.utc_offset)
 
         return GetMeasurementsResponse(
             success=True,
@@ -340,16 +336,18 @@ class GetMeasurements(Controller):
 
         return query.get_distinct_gsrn()
 
-    def get_measurements(self, token, measurement_type, resolution, begin_range, gsrn):
+    def get_measurements(self, token, measurement_type, resolution, begin_range, gsrn, utc_offset):
         """
         :param str token:
         :param MeasurementType measurement_type:
         :param SummaryResolution resolution:
         :param DateTimeRange begin_range:
         :param list[str] gsrn:
+        :param int utc_offset:
         :rtype: DataSet
         """
         request = GetMeasurementSummaryRequest(
+            utc_offset=utc_offset,
             resolution=resolution,
             fill=True,
             filters=MeasurementFilters(
@@ -367,14 +365,16 @@ class GetMeasurements(Controller):
         else:
             return DataSet(label=label)
 
-    def get_ggo_summary(self, token, resolution, filters):
+    def get_ggo_summary(self, token, resolution, filters, utc_offset):
         """
         :param str token:
         :param SummaryResolution resolution:
         :param GgoFilters filters:
+        :param int utc_offset:
         :rtype: (list[DataSet], list[str])
         """
         request = acc.GetGgoSummaryRequest(
+            utc_offset=utc_offset,
             filters=filters,
             resolution=resolution,
             grouping=[acc.SummaryGrouping.TECHNOLOGY],
