@@ -8,21 +8,33 @@ from originexample.consuming.consumers import RetiringConsumer
 @patch('originexample.consuming.consumers.get_consumption')
 @patch('originexample.consuming.consumers.get_retired_amount')
 @pytest.mark.parametrize(
-    'ggo_amount, measured_amount, retired_amount, expected_amount', (
-    (200,        100,             50,             50),
-    (200,        0,               50,             0),
-    (200,        None,            50,             0),
-    (200,        200,             0,              200),
-    (200,        200,             50,             150),
-    (100,        200,             0,              100),
-    (100,        200,             100,            100),
-    (100,        200,             150,            50),
-    (100,        200,             200,            0),
-    (0,          200,             100,            0),
+    'ggo_amount, measured_amount, retired_amount, expected_amount, already_transferred_amount', (
+    (200,        100,             50,             50,              0),
+    (200,        0,               50,             0,               0),
+    (200,        None,            50,             0,               0),
+    (200,        200,             0,              200,             0),
+    (200,        200,             50,             150,             0),
+    (100,        200,             0,              100,             0),
+    (100,        200,             100,            100,             0),
+    (100,        200,             150,            50,              0),
+    (100,        200,             200,            0,               0),
+    (0,          200,             100,            0,               0),
+
+    # With already_transferred_amount (same results expected)
+    (200,        100,             50,             50,              50),
+    (200,        0,               50,             0,               50),
+    (200,        None,            50,             0,               50),
+    (200,        200,             0,              200,             50),
+    (200,        200,             50,             150,             50),
+    (100,        200,             0,              100,             50),
+    (100,        200,             100,            100,             50),
+    (100,        200,             150,            50,              50),
+    (100,        200,             200,            0,               50),
+    (0,          200,             100,            0,               50),
 ))
 def test__RetiringConsumer__get_desired_amount__should_return_correct_amount(
         get_retired_amount_mock, get_consumption_mock,
-        ggo_amount, measured_amount, retired_amount, expected_amount):
+        ggo_amount, measured_amount, retired_amount, expected_amount, already_transferred_amount):
 
     get_retired_amount_mock.return_value = retired_amount
 
@@ -39,7 +51,7 @@ def test__RetiringConsumer__get_desired_amount__should_return_correct_amount(
     ggo = Mock(begin=begin, amount=ggo_amount)
 
     # Act
-    desired_amount = uut.get_desired_amount(ggo)
+    desired_amount = uut.get_desired_amount(ggo, already_transferred_amount)
 
     # Assert
     assert desired_amount == expected_amount
