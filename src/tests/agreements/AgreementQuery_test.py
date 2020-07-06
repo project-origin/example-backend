@@ -1,3 +1,4 @@
+import pytz
 import pytest
 from itertools import product
 from unittest.mock import Mock
@@ -310,7 +311,7 @@ def test__AgreementQuery__is_active__returns_correct_agreements(seeded_session):
     ('Wind', datetime(2020, 2, 1, 0, 0, 0, tzinfo=timezone.utc)),
     ('Wind', datetime(2020, 2, 29, 23, 0, 0, tzinfo=timezone.utc)),
     ('Wind', datetime(2020, 3, 1, 0, 0, 0, tzinfo=timezone.utc)),
-    ('Wind', datetime(2020, 3, 31, 23, 0, 0, tzinfo=timezone.utc)),
+    ('Wind', datetime(2020, 3, 31, 21, 0, 0, tzinfo=timezone.utc)),
 ))
 def test__AgreementQuery__is_elibigle_to_trade__TradeAgreement_exists__returns_correct_agreements(
         seeded_session, ggo_technology, ggo_begin):
@@ -324,7 +325,7 @@ def test__AgreementQuery__is_elibigle_to_trade__TradeAgreement_exists__returns_c
 
     # Assert
     assert query.count() > 0
-    assert all(ag.date_from <= ggo_begin.date() <= ag.date_to for ag in query.all())
+    assert all(ag.date_from <= ggo_begin.astimezone(pytz.timezone('Europe/Copenhagen')).date() <= ag.date_to for ag in query.all())
     assert all(ag.technology in (None, ggo_technology) for ag in query.all())
 
 
@@ -334,7 +335,7 @@ def test__AgreementQuery__is_elibigle_to_trade__TradeAgreement_exists__returns_c
     datetime(2020, 2, 1, 0, 0, 0, tzinfo=timezone.utc),
     datetime(2020, 2, 29, 23, 0, 0, tzinfo=timezone.utc),
     datetime(2020, 3, 1, 0, 0, 0, tzinfo=timezone.utc),
-    datetime(2020, 3, 31, 23, 0, 0, tzinfo=timezone.utc),
+    datetime(2020, 3, 31, 21, 0, 0, tzinfo=timezone.utc),
 ))
 def test__AgreementQuery__is_elibigle_to_trade__technology_does_not_exists__returns_only_agreements_without_technology(
         seeded_session, ggo_begin):
@@ -352,7 +353,7 @@ def test__AgreementQuery__is_elibigle_to_trade__technology_does_not_exists__retu
 
 
 @pytest.mark.parametrize('ggo_begin', (
-    datetime(2019, 12, 31, 23, 0, 0, tzinfo=timezone.utc),
+    datetime(2019, 12, 31, 21, 0, 0, tzinfo=timezone.utc),
     datetime(2020, 4, 1, 0, 0, 0, tzinfo=timezone.utc),
 ))
 def test__AgreementQuery__is_elibigle_to_trade__ggo_date_is_outside_agreements__returns_nothing(
