@@ -88,7 +88,11 @@ class GgoConsumerController(object):
         remaining_amount = ggo.amount
 
         for consumer in takewhile(lambda _: remaining_amount > 0, consumers):
-            desired_amount = consumer.get_desired_amount(ggo)
+            already_transferred = ggo.amount - remaining_amount
+
+            desired_amount = consumer.get_desired_amount(
+                ggo, already_transferred)
+
             assigned_amount = min(remaining_amount, desired_amount)
             remaining_amount -= assigned_amount
 
@@ -117,9 +121,10 @@ class GgoConsumer(object):
         """
         raise NotImplementedError
 
-    def get_desired_amount(self, ggo):
+    def get_desired_amount(self, ggo, already_transferred):
         """
         :param Ggo ggo:
+        :param int already_transferred:
         :rtype: int
         """
         raise NotImplementedError
@@ -149,9 +154,10 @@ class RetiringConsumer(GgoConsumer):
             gsrn=self.facility.gsrn,
         ))
 
-    def get_desired_amount(self, ggo):
+    def get_desired_amount(self, ggo, already_transferred):
         """
         :param Ggo ggo:
+        :param int already_transferred:
         :rtype: int
         """
         measurement = get_consumption(
@@ -200,9 +206,10 @@ class AgreementConsumer(GgoConsumer):
             account=self.agreement.user_to.sub,
         ))
 
-    def get_desired_amount(self, ggo):
+    def get_desired_amount(self, ggo, already_transferred):
         """
         :param Ggo ggo:
+        :param int already_transferred:
         :rtype: int
         """
         transferred_amount = get_transferred_amount(
@@ -231,13 +238,14 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
     def __str__(self):
         return 'AgreementLimitedToConsumptionConsumer<%s>' % self.reference
 
-    def get_desired_amount(self, ggo):
+    def get_desired_amount(self, ggo, already_transferred):
         """
         :param Ggo ggo:
+        :param int already_transferred:
         :rtype: int
         """
         remaining_amount = super(AgreementLimitedToConsumptionConsumer, self) \
-            .get_desired_amount(ggo)
+            .get_desired_amount(ggo, already_transferred)
 
         if remaining_amount <= 0:
             return 0
@@ -251,6 +259,7 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
                 begin=ggo.begin,
             )
 
+        desired_amount -= already_transferred
         desired_amount -= get_stored_amount(
             token=self.agreement.user_to.access_token,
             begin=ggo.begin,
