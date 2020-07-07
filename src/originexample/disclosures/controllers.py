@@ -40,6 +40,7 @@ class GetDisclosure(Controller):
         datahub_request = dh.GetDisclosureRequest(
             id=request.id,
             date_range=request.date_range,
+            utc_offset=request.utc_offset,
         )
 
         datahub_response = datahub.get_disclosure(datahub_request)
