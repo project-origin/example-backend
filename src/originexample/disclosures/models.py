@@ -21,6 +21,7 @@ class DisclosureDataSeries:
 @dataclass
 class GetDisclosureRequest:
     id: str
+    utc_offset: int = field(metadata=dict(required=False, missing=0, data_key='utcOffset'))
     date_range: DateRange = field(default=None, metadata=dict(data_key='dateRange'))
 
 
