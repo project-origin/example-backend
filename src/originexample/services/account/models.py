@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import List, Dict
 from datetime import datetime
 from dataclasses import dataclass, field
 
@@ -21,6 +21,7 @@ class Ggo:
     technology: str = field(metadata=dict(allow_none=True))
     technology_code: str = field(metadata=dict(data_key='technologyCode'))
     fuel_code: str = field(metadata=dict(data_key='fuelCode'))
+    emissions: Dict[str, float] = field(default=None, metadata=dict(required=False, missing=None))
 
 
 class GgoCategory(Enum):
