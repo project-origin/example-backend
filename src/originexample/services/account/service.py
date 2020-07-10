@@ -16,14 +16,16 @@ from .models import (
     GetGgoListResponse,
     GetGgoSummaryRequest,
     GetGgoSummaryResponse,
-    GetTotalAmountRequest,
-    GetTotalAmountResponse,
     ComposeGgoRequest,
     ComposeGgoResponse,
     GetTransferSummaryRequest,
     GetTransferSummaryResponse,
     GetTransferredAmountRequest,
     GetTransferredAmountResponse,
+    GetTotalAmountRequest,
+    GetTotalAmountResponse,
+    GetEcoDeclarationRequest,
+    GetEcoDeclarationResponse,
     WebhookSubscribeRequest,
     WebhookSubscribeResponse,
 )
@@ -186,17 +188,31 @@ class AccountService(object):
             response_schema=md.class_schema(GetTotalAmountResponse),
         )
 
+    def get_eco_declaration(self, token, request):
+        """
+        :param str token:
+        :param GetEcoDeclarationRequest request:
+        :rtype: GetEcoDeclarationResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/eco-declaration',
+            request=request,
+            request_schema=md.class_schema(GetEcoDeclarationRequest),
+            response_schema=md.class_schema(GetEcoDeclarationResponse),
+        )
+
     def webhook_on_ggo_received_subscribe(self, token):
         """
         :param str token:
         :rtype: WebhookSubscribeResponse
         """
-        url = f'{PROJECT_URL}/webhook/on-ggo-received'
+        callback_url = f'{PROJECT_URL}/webhook/on-ggo-received'
 
         return self.invoke(
             token=token,
             path='/webhook/on-ggo-received/subscribe',
-            request=WebhookSubscribeRequest(url=url, secret=WEBHOOK_SECRET),
+            request=WebhookSubscribeRequest(url=callback_url, secret=WEBHOOK_SECRET),
             request_schema=md.class_schema(WebhookSubscribeRequest),
             response_schema=md.class_schema(WebhookSubscribeResponse),
         )

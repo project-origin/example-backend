@@ -135,20 +135,6 @@ class GetGgoSummaryResponse:
     groups: List[SummaryGroup] = field(default_factory=list)
 
 
-# -- GetTotalAmount request and response -------------------------------------
-
-
-@dataclass
-class GetTotalAmountRequest:
-    filters: GgoFilters
-
-
-@dataclass
-class GetTotalAmountResponse:
-    success: bool
-    amount: int
-
-
 # -- GetTransferSummary request and response ---------------------------------
 
 
@@ -196,6 +182,53 @@ class GetTransferredAmountRequest:
 class GetTransferredAmountResponse:
     success: bool
     amount: int
+
+
+# -- GetTotalAmount request and response -------------------------------------
+
+
+@dataclass
+class GetTotalAmountRequest:
+    filters: GgoFilters
+
+
+@dataclass
+class GetTotalAmountResponse:
+    success: bool
+    amount: int
+
+
+# -- GetEcoDeclaration request and response -------------------------------------
+
+
+class EcoDeclarationResolution(Enum):
+    all = 'all'
+    year = 'year'
+    month = 'month'
+    day = 'day'
+    hour = 'hour'
+
+
+@dataclass
+class EcoDeclaration:
+    emissions: Dict[datetime, Dict[str, float]] = field(metadata=dict(data_key='emissions'))
+    emissions_per_wh: Dict[datetime, Dict[str, float]] = field(metadata=dict(data_key='emissionsPerWh'))
+    total_emissions: Dict[str, float] = field(metadata=dict(data_key='totalEmissions'))
+    total_emissions_per_wh: Dict[str, float] = field(metadata=dict(data_key='totalEmissionsPerWh'))
+
+
+@dataclass
+class GetEcoDeclarationRequest:
+    gsrn: List[str]
+    resolution: EcoDeclarationResolution
+    begin_range: DateTimeRange = field(metadata=dict(data_key='beginRange'))
+
+
+@dataclass
+class GetEcoDeclarationResponse:
+    success: bool
+    general: EcoDeclaration
+    individual: EcoDeclaration
 
 
 # -- Webhooks request and response -------------------------------------------

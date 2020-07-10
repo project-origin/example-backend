@@ -1,4 +1,5 @@
 from .auth import controllers as auth
+from .eco import controllers as eco
 from .commodities import controllers as commodities
 from .facilities import controllers as facilities
 from .agreements import controllers as agreements
@@ -45,6 +46,9 @@ urls = (
     ('/commodities/measurements/csv', commodities.ExportMeasurementsCSV()),
     ('/commodities/ggo-summary/csv', commodities.ExportGgoSummaryCSV()),
     ('/commodities/ggo-list/csv', commodities.ExportGgoListCSV()),
+
+    # Eco Declaration
+    ('/eco-declaration', eco.GetEcoDeclaration()),
 
     # Disclosure
     ('/disclosure', disclosures.GetDisclosure()),
