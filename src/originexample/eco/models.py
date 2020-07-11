@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from originexample.common import DateTimeRange
+from originexample.common import DateRange
 from originexample.facilities import FacilityFilters
 from originexample.services.account import (
     EcoDeclarationResolution,
@@ -12,4 +12,5 @@ from originexample.services.account import (
 class GetEcoDeclarationRequest:
     filters: FacilityFilters
     resolution: EcoDeclarationResolution
-    begin_range: DateTimeRange = field(metadata=dict(data_key='beginRange'))
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+    utc_offset: int = field(metadata=dict(required=False, missing=0, data_key='utcOffset'))

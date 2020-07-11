@@ -11,7 +11,7 @@ from .models import (
     GetEcoDeclarationRequest,
     GetEcoDeclarationResponse,
 )
-
+from ..common import DateTimeRange
 
 account_service = acc.AccountService()
 
@@ -43,7 +43,6 @@ class GetEcoDeclaration(Controller):
         """
         :param GetEcoDeclarationRequest request:
         :param User user:
-        :param Session session:
         :rtype: GetEcoDeclarationResponse
         """
         return account_service.get_eco_declaration(
@@ -51,7 +50,7 @@ class GetEcoDeclaration(Controller):
             request=acc.GetEcoDeclarationRequest(
                 gsrn=self.get_gsrn_numbers(user, request.filters),
                 resolution=request.resolution,
-                begin_range=request.begin_range,
+                begin_range=DateTimeRange.from_date_range(request.date_range),
             ),
         )
 
