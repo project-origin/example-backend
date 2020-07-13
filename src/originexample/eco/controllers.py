@@ -46,8 +46,9 @@ class GetEcoDeclaration(Controller):
         """
         account_service_request = acc.GetEcoDeclarationRequest(
             gsrn=self.get_gsrn_numbers(user, request.filters),
-            resolution=get_resolution(request.date_range.delta),
+            resolution=request.resolution,
             begin_range=DateTimeRange.from_date_range(request.date_range),
+            utc_offset=request.utc_offset,
         )
 
         return account_service.get_eco_declaration(

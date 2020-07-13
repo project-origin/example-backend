@@ -224,6 +224,7 @@ class GetEcoDeclarationRequest:
     gsrn: List[str]
     resolution: EcoDeclarationResolution
     begin_range: DateTimeRange = field(metadata=dict(data_key='beginRange'))
+    utc_offset: int = field(metadata=dict(data_key='utcOffset'))
 
 
 @dataclass
