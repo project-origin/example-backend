@@ -106,9 +106,9 @@ class DataHubService(object):
                 status_code=response.status_code,
                 response_body=str(response.content),
             )
-        except marshmallow.ValidationError:
+        except marshmallow.ValidationError as e:
             raise DataHubServiceError(
-                f'Failed to validate response JSON: {url}\n\n{response.content}',
+                f'Failed to validate response JSON: {url}\n\n{response.content}\n\n{str(e)}',
                 status_code=response.status_code,
                 response_body=str(response.content),
             )
