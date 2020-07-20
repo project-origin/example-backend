@@ -1,4 +1,7 @@
+import csv
 import marshmallow_dataclass as md
+from flask import send_file, make_response
+from io import BytesIO, StringIO
 
 from originexample.http import Controller
 from originexample.db import inject_session
@@ -44,16 +47,22 @@ class GetEcoDeclaration(Controller):
         :param User user:
         :rtype: GetEcoDeclarationResponse
         """
-        account_service_request = acc.GetEcoDeclarationRequest(
+        return account_service.get_eco_declaration(
+            token=user.access_token,
+            request=self.build_account_service_request(request, user),
+        )
+
+    def build_account_service_request(self, request, user):
+        """
+        :param GetEcoDeclarationRequest request:
+        :param User user:
+        :rtype: GetEcoDeclarationRequest
+        """
+        return acc.GetEcoDeclarationRequest(
             gsrn=self.get_gsrn_numbers(user, request.filters),
             resolution=request.resolution,
             begin_range=DateTimeRange.from_date_range(request.date_range),
             utc_offset=request.utc_offset,
-        )
-
-        return account_service.get_eco_declaration(
-            token=user.access_token,
-            request=account_service_request,
         )
 
     @inject_session
@@ -72,3 +81,108 @@ class GetEcoDeclaration(Controller):
             query = query.apply_filters(filters)
 
         return query.get_distinct_gsrn()
+
+
+class ExportEcoDeclarationPDF(GetEcoDeclaration):
+    """
+    TODO
+    """
+    Request = md.class_schema(GetEcoDeclarationRequest)
+    Response = None
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param GetEcoDeclarationRequest request:
+        :param User user:
+        :rtype: flask.Response
+        """
+        pdf_file_data = account_service.export_eco_declaration_pdf(
+            token=user.access_token,
+            request=self.build_account_service_request(request, user),
+        )
+
+        f = BytesIO()
+        f.write(pdf_file_data)
+        f.seek(0)
+
+        return send_file(f, attachment_filename='EnvironmentDeclaration.pdf')
+
+
+class ExportEcoDeclarationEmissionsCSV(GetEcoDeclaration):
+    """
+    TODO
+    """
+    Request = md.class_schema(GetEcoDeclarationRequest)
+    Response = None
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param GetEcoDeclarationRequest request:
+        :param User user:
+        :rtype: flask.Response
+        """
+        base_response = account_service.get_eco_declaration(
+            token=user.access_token,
+            request=self.build_account_service_request(request, user),
+        )
+
+        emission_keys = list(base_response.individual.total_emissions.keys())
+        fieldnames = ['begin', 'consumption'] + emission_keys
+
+        f = StringIO()
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for begin, emissions in base_response.individual.emissions.items():
+            emissions.update({
+                'begin': begin.isoformat(),
+                'consumption': base_response.individual.consumed_amount[begin],
+            })
+            writer.writerow(emissions)
+
+        response = make_response(f.getvalue())
+        response.headers['Content-type'] = 'text/csv'
+        response.headers['Content-Disposition'] = \
+            'attachment; filename=EnvironmentDeclaration-emissions.csv'
+
+        return response
+
+
+class ExportEcoDeclarationTechnologiesCSV(GetEcoDeclaration):
+    """
+    TODO
+    """
+    Request = md.class_schema(GetEcoDeclarationRequest)
+    Response = None
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param GetEcoDeclarationRequest request:
+        :param User user:
+        :rtype: flask.Response
+        """
+        base_response = account_service.get_eco_declaration(
+            token=user.access_token,
+            request=self.build_account_service_request(request, user),
+        )
+
+        technologies_keys = list(base_response.individual.total_technologies.keys())
+        fieldnames = ['begin'] + technologies_keys
+
+        f = StringIO()
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+
+        for begin, technologies in base_response.individual.technologies.items():
+            technologies.update({'begin': begin.isoformat()})
+            writer.writerow(technologies)
+
+        response = make_response(f.getvalue())
+        response.headers['Content-type'] = 'text/csv'
+        response.headers['Content-Disposition'] = \
+            'attachment; filename=EnvironmentDeclaration-technologies.csv'
+
+        return response

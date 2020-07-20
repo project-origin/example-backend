@@ -49,6 +49,9 @@ urls = (
 
     # Eco Declaration
     ('/eco-declaration', eco.GetEcoDeclaration()),
+    ('/eco-declaration/pdf', eco.ExportEcoDeclarationPDF()),
+    ('/eco-declaration/csv/emissions', eco.ExportEcoDeclarationEmissionsCSV()),
+    ('/eco-declaration/csv/technologies', eco.ExportEcoDeclarationTechnologiesCSV()),
 
     # Disclosure
     ('/disclosure', disclosures.GetDisclosure()),

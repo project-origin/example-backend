@@ -202,6 +202,42 @@ class AccountService(object):
             response_schema=md.class_schema(GetEcoDeclarationResponse),
         )
 
+    def export_eco_declaration_pdf(self, token, request):
+        """
+        :param str token:
+        :param GetEcoDeclarationRequest request:
+        :returns: File-like object
+        """
+        path = '/eco-declaration/export-pdf'
+        request_schema = md.class_schema(GetEcoDeclarationRequest)
+
+        url = '%s%s' % (ACCOUNT_SERVICE_URL, path)
+        headers = {TOKEN_HEADER: f'Bearer {token}'}
+        body = request_schema().dump(request)
+
+        try:
+            response = requests.post(
+                url=url,
+                json=body,
+                headers=headers,
+                verify=not DEBUG,
+            )
+        except:
+            raise AccountServiceConnectionError(
+                'Failed to POST request to AccountService')
+
+        if response.status_code != 200:
+            raise AccountServiceError(
+                (
+                    f'Invoking AccountService resulted in status code {response.status_code}: '
+                    f'{url}\n\n{response.content}'
+                ),
+                status_code=response.status_code,
+                response_body=str(response.content),
+            )
+
+        return response.content
+
     def webhook_on_ggo_received_subscribe(self, token):
         """
         :param str token:
