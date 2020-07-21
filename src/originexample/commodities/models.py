@@ -86,6 +86,4 @@ class GetMeasurementsRequest:
 @dataclass
 class GetMeasurementsResponse:
     success: bool
-    labels: List[str] = field(default_factory=list)
     measurements: DataSet = None
-    ggos: List[DataSet] = field(default_factory=list)
