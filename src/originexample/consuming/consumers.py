@@ -69,7 +69,11 @@ class GgoConsumerController(object):
             .is_outbound_from(user) \
             .is_elibigle_to_trade(ggo) \
             .is_operating_at(ggo.begin) \
-            .is_active()
+            .is_active() \
+            .order_by(TradeAgreement.transfer_priority.asc()) \
+            .all()
+
+        # TODO test query ordering (transfer_priority)
 
         for agreement in agreements:
             if agreement.limit_to_consumption:

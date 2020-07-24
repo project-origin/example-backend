@@ -79,6 +79,10 @@ class TradeAgreement(ModelBase):
     unit = sa.Column(sa.Enum(Unit))
     limit_to_consumption = sa.Column(sa.Boolean())
 
+    # Lowest number = highest priority
+    # Is set when user accepts the agreement, otherwise None
+    transfer_priority = sa.Column(sa.Integer())
+
     @property
     def transfer_reference(self):
         """
@@ -127,6 +131,7 @@ class TradeAgreement(ModelBase):
     def cancel(self):
         self.state = AgreementState.CANCELLED
         self.cancelled = func.now()
+        self.transfer_priority = None
 
 # ----------------------------------------------------------------------------
 
@@ -211,6 +216,14 @@ class GetAgreementSummaryResponse:
 @dataclass
 class CancelAgreementRequest:
     public_id: str = field(metadata=dict(data_key='id'))
+
+
+# -- SetTransferPriority request and response ------------------------------------
+
+
+@dataclass
+class SetTransferPriorityRequest:
+    public_ids_prioritized: List[str] = field(default_factory=list, metadata=dict(data_key='idsPrioritized', missing=[]))
 
 
 # -- SubmitAgreementProposal request and response ----------------------------
