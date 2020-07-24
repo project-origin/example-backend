@@ -40,14 +40,20 @@ from .models import (
     GetAgreementDetailsRequest,
     GetAgreementDetailsResponse,
     CancelAgreementRequest,
+    SetTransferPriorityRequest,
 )
 
 
 account = AccountService()
 
 
+# -- Helpers -----------------------------------------------------------------
+
+
 def get_resolution(delta):
     """
+    TODO write me
+
     :param timedelta delta:
     :rtype: SummaryResolution
     """
@@ -59,6 +65,33 @@ def get_resolution(delta):
         return SummaryResolution.DAY
     else:
         return SummaryResolution.HOUR
+
+
+def update_transfer_priorities(user, session):
+    """
+    TODO write me
+
+    :param User user:
+    :param sqlalchemy.orm.Session session:
+    """
+    session.execute("""
+        update agreements_agreement
+        set transfer_priority = s.row_number - 1
+        from (
+            select a.id, row_number() over (
+                partition by a.user_from_id
+                order by a.transfer_priority asc
+            )
+          from agreements_agreement as a
+          where a.state = 'ACCEPTED'
+          order by a.transfer_priority asc
+        ) as s
+        where agreements_agreement.id = s.id
+        and agreements_agreement.user_from_id = :user_from_id
+    """, {'user_from_id': user.id})
+
+
+# -- Controllers -------------------------------------------------------------
 
 
 class AbstractAgreementController(Controller):
@@ -136,40 +169,44 @@ class GetAgreementList(AbstractAgreementController):
         pending = AgreementQuery(session) \
             .is_proposed_to(user) \
             .is_pending() \
+            .order_by(TradeAgreement.created.asc()) \
             .all()
 
         # Invitations sent by this user awaiting response by another user
         sent = AgreementQuery(session) \
             .is_proposed_by(user) \
             .is_pending() \
+            .order_by(TradeAgreement.created.asc()) \
             .all()
 
         # Inbound agreements currently active
         inbound = AgreementQuery(session) \
             .is_inbound_to(user) \
             .is_accepted() \
+            .order_by(TradeAgreement.created.asc()) \
             .all()
 
         # Outbound agreements currently active
         outbound = AgreementQuery(session) \
             .is_outbound_from(user) \
             .is_accepted() \
+            .order_by(TradeAgreement.transfer_priority.asc()) \
             .all()
 
         # Formerly accepted agreements which has now been cancelled
-        # TODO remove after 14 days
         cancelled = AgreementQuery(session) \
             .belongs_to(user) \
             .is_cancelled() \
             .is_cancelled_recently() \
+            .order_by(TradeAgreement.cancelled.desc()) \
             .all()
 
         # Formerly proposed agreements which has now been declined
-        # TODO remove after 14 days
         declined = AgreementQuery(session) \
             .belongs_to(user) \
             .is_declined() \
             .is_declined_recently() \
+            .order_by(TradeAgreement.declined.desc()) \
             .all()
 
         map_agreement = partial(self.map_agreement_for, user)
@@ -308,7 +345,7 @@ class CancelAgreement(Controller):
     Request = md.class_schema(CancelAgreementRequest)
 
     @requires_login
-    @atomic
+    @inject_session
     def handle_request(self, request, user, session):
         """
         :param CancelAgreementRequest request:
@@ -322,10 +359,83 @@ class CancelAgreement(Controller):
             .one_or_none()
 
         if agreement:
-            agreement.cancel()
+            # Agreement must be cancelled and its transaction committed to
+            # the database before updating transfer priorities, hence both
+            # are executed in a transaction for themselves sequentially
+            self.cancel_agreement(agreement.public_id, user)
+            self.update_transfer_priorities(agreement.user_from)
             return True
         else:
             return False
+
+    @atomic
+    def cancel_agreement(self, public_id, user, session):
+        """
+        TODO
+        """
+        AgreementQuery(session) \
+            .has_public_id(public_id) \
+            .belongs_to(user) \
+            .one() \
+            .cancel()
+
+    @atomic
+    def update_transfer_priorities(self, *args, **kwargs):
+        """
+        TODO
+        """
+        update_transfer_priorities(*args, **kwargs)
+
+
+class SetTransferPriority(Controller):
+    """
+    TODO
+    """
+    Request = md.class_schema(SetTransferPriorityRequest)
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param SetTransferPriorityRequest request:
+        :param User user:
+        :rtype: bool
+        """
+        self.update_transfer_priorities(
+            request.public_ids_prioritized, user)
+
+        self.complete_priorities(user)
+
+        return True
+
+    @atomic
+    def update_transfer_priorities(self, public_ids_prioritized, user, session):
+        """
+        :param list[str public_ids_prioritized:
+        :param User user:
+        :param Session session:
+        :rtype: bool
+        """
+        agreements = AgreementQuery(session) \
+            .is_outbound_from(user) \
+            .is_accepted()
+
+        # Initially remove priority for all agreements
+        agreements.update({TradeAgreement.transfer_priority: None})
+
+        # Set priorities in the order they were provided
+        for i, public_id in enumerate(public_ids_prioritized):
+            agreements \
+                .has_public_id(public_id) \
+                .update({TradeAgreement.transfer_priority: i})
+
+        return True
+
+    @atomic
+    def complete_priorities(self, *args, **kwargs):
+        """
+        TODO
+        """
+        update_transfer_priorities(*args, **kwargs)
 
 
 # -- Proposals ---------------------------------------------------------------
@@ -478,6 +588,8 @@ class RespondToProposal(Controller):
         :param Session session:
         """
         agreement.state = AgreementState.ACCEPTED
+        agreement.transfer_priority = self.get_next_priority(
+            agreement.user_from, session)
 
         if request.technology and self.can_set_technology(agreement, user):
             agreement.technology = request.technology
@@ -515,6 +627,21 @@ class RespondToProposal(Controller):
             .belongs_to(user) \
             .has_any_public_id(facility_public_ids) \
             .all()
+
+    def get_next_priority(self, user, session):
+        """
+        :param User user:
+        :param Session session:
+        :rtype: int
+        """
+        current_max_priority = AgreementQuery(session) \
+            .is_outbound_from(user) \
+            .get_peiority_max()
+
+        if current_max_priority is not None:
+            return current_max_priority + 1
+        else:
+            return 0
 
 
 class WithdrawProposal(Controller):

@@ -1,7 +1,11 @@
+import isodate
 from enum import Enum
-from typing import List
+from typing import List, Dict
 from datetime import datetime
 from dataclasses import dataclass, field
+
+from marshmallow import fields
+from marshmallow_dataclass import NewType
 
 from originexample.common import DateTimeRange
 
@@ -21,6 +25,7 @@ class Ggo:
     technology: str = field(metadata=dict(allow_none=True))
     technology_code: str = field(metadata=dict(data_key='technologyCode'))
     fuel_code: str = field(metadata=dict(data_key='fuelCode'))
+    emissions: Dict[str, float] = field(default=None, metadata=dict(required=False, missing=None))
 
 
 class GgoCategory(Enum):
@@ -95,6 +100,68 @@ class SummaryGrouping:
     TECHNOLOGY = 'technology'
     TECHNOLOGY_CODE = 'technologyCode'
     FUEL_CODE = 'fuelCode'
+
+
+# -- Forecast ----------------------------------------------------------------
+
+
+ForecastDuration = NewType(
+    name='ForecastDuration',
+    typ=int,
+    field=fields.Function,
+    deserialize=lambda s: isodate.parse_duration(s),
+    serialize=lambda f: isodate.duration_isoformat(f.resolution),
+)
+
+
+ForecastBeginList = NewType(
+    name='ForecastBeginList',
+    typ=List[datetime],
+    field=fields.Function,
+    serialize=lambda f: [begin.isoformat() for begin in f.get_begins()],
+)
+
+
+ForecastEndList = NewType(
+    name='ForecastEndList',
+    typ=List[datetime],
+    field=fields.Function,
+    serialize=lambda f: [end.isoformat() for end in f.get_ends()],
+)
+
+
+@dataclass
+class Forecast:
+    """
+    TODO
+    """
+    id: str
+    sender: str
+    recipient: str
+    created: datetime
+    begin: datetime
+    end: datetime
+    sector: str
+    reference: str
+    forecast: List[int]
+    resolution: ForecastDuration
+    begins: ForecastBeginList = field(default_factory=list)
+    ends: ForecastEndList = field(default_factory=list)
+
+    def get_begins(self):
+        """
+        :rtype: list[datetime]
+        """
+        return [
+            self.begin + (self.resolution * i)
+            for i in range(len(self.forecast))
+        ]
+
+    def get_ends(self):
+        """
+        :rtype: list[datetime]
+        """
+        return [begin + self.resolution for begin in self.get_begins()]
 
 
 # -- GetGgoList request and response -----------------------------------------
@@ -195,6 +262,69 @@ class GetTransferredAmountRequest:
 class GetTransferredAmountResponse:
     success: bool
     amount: int
+
+
+# -- GetForecast request and response ----------------------------------------
+
+
+@dataclass
+class GetForecastRequest:
+    id: str
+    reference: str = field(default=None)
+    at_time: datetime = field(default=None, metadata=dict(data_key='atTime'))
+
+
+@dataclass
+class GetForecastResponse:
+    success: bool
+    forecast: Forecast
+
+
+# -- GetForecastList request and response ------------------------------------
+
+
+@dataclass
+class GetForecastListRequest:
+    offset: int = field(default=0)
+    limit: int = field(default=None)
+    reference: str = field(default=None)
+    at_time: datetime = field(default=None, metadata=dict(data_key='atTime'))
+
+
+@dataclass
+class GetForecastListResponse:
+    success: bool
+    total: int
+    forecasts: List[Forecast]
+
+
+# -- GetForecastSeries request and response ----------------------------------
+
+
+@dataclass
+class GetForecastSeriesResponse:
+    success: bool
+    sent: List[str]
+    received: List[str]
+
+
+# -- SubmitForecast request and response -------------------------------------
+
+
+@dataclass
+class SubmitForecastRequest:
+    account: str
+    reference: str
+    sector: str
+    begin: datetime
+    resolution: str
+    forecast: List[int]
+
+
+@dataclass
+class SubmitForecastResponse:
+    success: bool
+    id: str
 
 
 # -- Webhooks request and response -------------------------------------------

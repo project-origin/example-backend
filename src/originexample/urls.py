@@ -4,6 +4,7 @@ from .facilities import controllers as facilities
 from .agreements import controllers as agreements
 from .disclosures import controllers as disclosures
 from .support import controllers as support
+from .forecast import controllers as forecast
 from .webhooks import controllers as webhooks
 
 
@@ -32,6 +33,7 @@ urls = (
     ('/agreements/details', agreements.GetAgreementDetails()),
     ('/agreements/summary', agreements.GetAgreementSummary()),
     ('/agreements/cancel', agreements.CancelAgreement()),
+    ('/agreements/set-transfer-priority', agreements.SetTransferPriority()),
     ('/agreements/propose', agreements.SubmitAgreementProposal()),
     ('/agreements/propose/respond', agreements.RespondToProposal()),
     ('/agreements/propose/withdraw', agreements.WithdrawProposal()),
@@ -52,6 +54,12 @@ urls = (
     ('/disclosure/preview', disclosures.GetDisclosurePreview()),
     ('/disclosure/create', disclosures.CreateDisclosure()),
     ('/disclosure/delete', disclosures.DeleteDisclosure()),
+
+    # Forecasts
+    ('/forecast', forecast.GetForecast()),
+    ('/forecast/list', forecast.GetForecastList()),
+    ('/forecast/series', forecast.GetForecastSeries()),
+    ('/forecast/submit', forecast.SubmitForecast()),
 
     # Webhooks
     ('/webhook/on-ggo-received', webhooks.OnGgoReceivedWebhook()),
