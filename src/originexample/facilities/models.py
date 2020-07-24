@@ -221,7 +221,7 @@ class EditFacilityDetailsResponse:
     success: bool
 
 
-# -- GetFacilityList request and response ------------------------------------
+# -- SetRetiringPriority request and response --------------------------------
 
 
 @dataclass
