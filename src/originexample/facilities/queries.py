@@ -59,6 +59,15 @@ class FacilityQuery(object):
 
         return FacilityQuery(self.session, q)
 
+    def has_any_id(self, ids):
+        """
+        :param list[int] ids:
+        :rtype: FacilityQuery
+        """
+        return FacilityQuery(self.session, self.q.filter(
+            Facility.id.in_(ids),
+        ))
+
     def has_public_id(self, public_id):
         """
         :param str public_id:

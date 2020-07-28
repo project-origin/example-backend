@@ -34,6 +34,7 @@ urls = (
     ('/agreements/summary', agreements.GetAgreementSummary()),
     ('/agreements/cancel', agreements.CancelAgreement()),
     ('/agreements/set-transfer-priority', agreements.SetTransferPriority()),
+    ('/agreements/set-facilities', agreements.SetFacilities()),
     ('/agreements/propose', agreements.SubmitAgreementProposal()),
     ('/agreements/propose/respond', agreements.RespondToProposal()),
     ('/agreements/propose/withdraw', agreements.WithdrawProposal()),

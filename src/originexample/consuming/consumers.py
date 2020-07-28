@@ -1,3 +1,4 @@
+from math import floor
 from itertools import takewhile
 
 from originexample import logger
@@ -222,7 +223,13 @@ class AgreementConsumer(GgoConsumer):
             begin=ggo.begin,
         )
 
-        desired_amount = self.agreement.calculated_amount - transferred_amount
+        if self.agreement.amount_percent:
+            # Transfer percentage of ggo.amount
+            percentage_amount = self.agreement.amount_percent / 100 * ggo.amount
+            desired_amount = floor(percentage_amount) - transferred_amount
+        else:
+            # Transfer all of ggo.amount
+            desired_amount = self.agreement.calculated_amount - transferred_amount
 
         return max(0, min(ggo.amount, desired_amount))
 

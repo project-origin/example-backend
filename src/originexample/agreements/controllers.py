@@ -33,14 +33,12 @@ from .models import (
     SubmitAgreementProposalRequest,
     SubmitAgreementProposalResponse,
     RespondToProposalRequest,
-    RespondToProposalResponse,
     CountPendingProposalsResponse,
     WithdrawProposalRequest,
-    WithdrawProposalResponse,
     GetAgreementDetailsRequest,
     GetAgreementDetailsResponse,
     CancelAgreementRequest,
-    SetTransferPriorityRequest,
+    SetTransferPriorityRequest, SetFacilitiesRequest,
 )
 
 
@@ -123,6 +121,7 @@ class AbstractAgreementController(Controller):
             date_to=agreement.date_to,
             amount=agreement.amount,
             unit=agreement.unit,
+            amount_percent=agreement.amount_percent,
             technology=agreement.technology,
             reference=agreement.reference,
             limit_to_consumption=agreement.limit_to_consumption,
@@ -143,11 +142,25 @@ class AbstractAgreementController(Controller):
             date_to=agreement.date_to,
             amount=agreement.amount,
             unit=agreement.unit,
+            amount_percent=agreement.amount_percent,
             technology=agreement.technology,
             reference=agreement.reference,
-            facilities=list(agreement.facilities),
             limit_to_consumption=agreement.limit_to_consumption,
+            facilities=self.get_facilities(
+                agreement.user_from, agreement.facility_ids),
         )
+
+    @inject_session
+    def get_facilities(self, user, facility_ids, session):
+        """
+        :param User user:
+        :param list[int] facility_ids:
+        :param Session session:
+        """
+        return FacilityQuery(session) \
+            .belongs_to(user) \
+            .has_any_id(facility_ids) \
+            .all()
 
 
 class GetAgreementList(AbstractAgreementController):
@@ -438,6 +451,45 @@ class SetTransferPriority(Controller):
         update_transfer_priorities(*args, **kwargs)
 
 
+class SetFacilities(Controller):
+    """
+    TODO
+    """
+    Request = md.class_schema(SetFacilitiesRequest)
+
+    @requires_login
+    @atomic
+    def handle_request(self, request, user, session):
+        """
+        :param SetFacilitiesRequest request:
+        :param User user:
+        :param sqlalchemy.orm.Session session:
+        :rtype: bool
+        """
+        agreement = AgreementQuery(session) \
+            .belongs_to(user) \
+            .has_public_id(request.public_id) \
+            .one_or_none()
+
+        if agreement:
+            agreement.facility_ids = [f.id for f in self.get_facilities(
+                user, request.facility_public_ids, session)]
+            return True
+        else:
+            return False
+
+    def get_facilities(self, user, facility_public_ids, session):
+        """
+        :param User user:
+        :param list[str] facility_public_ids:
+        :param Session session:
+        """
+        return FacilityQuery(session) \
+            .belongs_to(user) \
+            .has_any_public_id(facility_public_ids) \
+            .all()
+
+
 # -- Proposals ---------------------------------------------------------------
 
 
@@ -514,12 +566,11 @@ class SubmitAgreementProposal(Controller):
             reference=request.reference,
             amount=request.amount,
             unit=request.unit,
+            amount_percent=request.amount_percent,
             technology=request.technology,
             limit_to_consumption=request.limit_to_consumption,
+            facility_ids=[f.id for f in facilities],
         )
-
-        if facilities:
-            agreement.facilities.extend(facilities)
 
         return agreement
 
@@ -540,7 +591,6 @@ class RespondToProposal(Controller):
     TODO
     """
     Request = md.class_schema(RespondToProposalRequest)
-    Response = md.class_schema(RespondToProposalResponse)
 
     @requires_login
     @atomic
@@ -549,7 +599,7 @@ class RespondToProposal(Controller):
         :param RespondToProposalRequest request:
         :param User user:
         :param Session session:
-        :rtype: RespondToProposalResponse
+        :rtype: bool
         """
         agreement = AgreementQuery(session) \
             .has_public_id(request.public_id) \
@@ -557,7 +607,7 @@ class RespondToProposal(Controller):
             .one_or_none()
 
         if not agreement:
-            return RespondToProposalResponse(success=False)
+            return False
 
         if request.accept:
             self.accept_proposal(request, agreement, user, session)
@@ -578,7 +628,7 @@ class RespondToProposal(Controller):
                 'agreement_id': agreement.id,
             })
 
-        return RespondToProposalResponse(success=True)
+        return True
 
     def accept_proposal(self, request, agreement, user, session):
         """
@@ -591,7 +641,7 @@ class RespondToProposal(Controller):
         agreement.transfer_priority = self.get_next_priority(
             agreement.user_from, session)
 
-        if request.technology and self.can_set_technology(agreement, user):
+        if request.technology and self.can_set_technology(agreement):
             agreement.technology = request.technology
 
         if request.facility_ids and self.can_set_facilities(agreement, user):
@@ -601,15 +651,26 @@ class RespondToProposal(Controller):
                 session=session,
             ))
 
-    def can_set_technology(self, agreement, user):
+        if request.amount_percent and self.can_set_amount_percent(agreement, user):
+            agreement.amount_percent = request.amount_percent
+
+    def can_set_technology(self, agreement):
         """
         :param User user:
         :param TradeAgreement agreement:
         :rtype: bool
         """
-        return not agreement.technology and agreement.is_outbound_from(user)
+        return not agreement.technology
 
     def can_set_facilities(self, agreement, user):
+        """
+        :param User user:
+        :param TradeAgreement agreement:
+        :rtype: bool
+        """
+        return agreement.is_outbound_from(user)
+
+    def can_set_amount_percent(self, agreement, user):
         """
         :param User user:
         :param TradeAgreement agreement:
@@ -649,7 +710,6 @@ class WithdrawProposal(Controller):
     TODO
     """
     Request = md.class_schema(WithdrawProposalRequest)
-    Response = md.class_schema(WithdrawProposalResponse)
 
     @requires_login
     @atomic
@@ -658,7 +718,7 @@ class WithdrawProposal(Controller):
         :param WithdrawProposalRequest request:
         :param User user:
         :param Session session:
-        :rtype: WithdrawProposalResponse
+        :rtype: bool
         """
         agreement = AgreementQuery(session) \
             .has_public_id(request.public_id) \
@@ -666,12 +726,11 @@ class WithdrawProposal(Controller):
             .is_pending() \
             .one_or_none()
 
-        if not agreement:
-            return RespondToProposalResponse(success=False)
-
-        agreement.state = AgreementState.WITHDRAWN
-
-        return WithdrawProposalResponse(success=True)
+        if agreement:
+            agreement.state = AgreementState.WITHDRAWN
+            return True
+        else:
+            return False
 
 
 class CountPendingProposals(Controller):
@@ -686,7 +745,7 @@ class CountPendingProposals(Controller):
         """
         :param User user:
         :param Session session:
-        :rtype: RespondToProposalResponse
+        :rtype: CountPendingProposalsResponse
         """
         count = AgreementQuery(session) \
             .is_awaiting_response_by(user) \
