@@ -50,15 +50,23 @@ Name | Description | Example
 `CONCURRENCY` | Number of gevent greenthreads to execute asynchronous tasks | `100`
 
 
-# Building container image
+## Building container image
+
+    docker build -f Dockerfile -t example-backend:v1 .
+
+## Running container images
 
 Web API:
 
-    sudo docker build -f Dockerfile -t example-backend:v1 .
+    docker run --entrypoint /app/entrypoint.web.sh example-backend:v1
 
----
----
----
+Worker:
+
+    docker run --entrypoint /app/entrypoint.worker.sh example-backend:v1
+
+Worker Beat:
+
+    docker run --entrypoint /app/entrypoint.beat.sh example-backend:v1
 
 
 # Installing and running the project
