@@ -8,6 +8,7 @@ from originexample.facilities import FacilityFilters
 
 
 # -- Common ------------------------------------------------------------------
+from originexample.services.datahub import Measurement
 
 
 @dataclass
@@ -86,4 +87,21 @@ class GetMeasurementsRequest:
 @dataclass
 class GetMeasurementsResponse:
     success: bool
+    labels: List[str] = field(default_factory=list)
     measurements: DataSet = None
+
+
+# -- GetPeakMeasurement request and response ---------------------------------
+
+
+@dataclass
+class GetPeakMeasurementRequest:
+    utc_offset: int = field(metadata=dict(required=False, missing=0, data_key='utcOffset'))
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+    measurement_type: MeasurementType = field(default=None, metadata=dict(data_key='measurementType', by_value=True))
+
+
+@dataclass
+class GetPeakMeasurementResponse:
+    success: bool
+    measurement: Measurement = None

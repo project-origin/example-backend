@@ -66,7 +66,7 @@ class TradeAgreement(ModelBase):
     state = sa.Column(sa.Enum(AgreementState), index=True, nullable=False)
     date_from = sa.Column(sa.Date(), nullable=False)
     date_to = sa.Column(sa.Date(), nullable=False)
-    technology = sa.Column(sa.String())
+    technologies = sa.Column(ARRAY(sa.String()), index=True)
     reference = sa.Column(sa.String())
 
     # Max. amount to transfer (per begin)
@@ -82,6 +82,9 @@ class TradeAgreement(ModelBase):
     # Lowest number = highest priority
     # Is set when user accepts the agreement, otherwise None
     transfer_priority = sa.Column(sa.Integer())
+
+    # Senders proposal note to recipient
+    proposal_note = sa.Column(sa.String())
 
     @property
     def transfer_reference(self):
@@ -157,9 +160,10 @@ class MappedTradeAgreement:
     amount: int
     amount_percent: int = field(metadata=dict(data_key='amountPercent'))
     unit: Unit
-    technology: str
+    technologies: List[str]
     reference: str
     limit_to_consumption: bool = field(metadata=dict(data_key='limitToConsumption'))
+    proposal_note: str = field(metadata=dict(data_key='proposalNote', allow_none=True))
 
     # Only for the outbound-user of an agreement
     facilities: List[MappedFacility] = field(default_factory=list)
@@ -249,7 +253,8 @@ class SubmitAgreementProposalRequest:
     amount_percent: int = field(metadata=dict(allow_none=True, data_key='amountPercent', validate=validate.Range(min=1, max=100)))
     date: DateRange
     limit_to_consumption: bool = field(metadata=dict(data_key='limitToConsumption'))
-    technology: str = field(default=None)
+    proposal_note: str = field(metadata=dict(data_key='proposalNote', allow_none=True))
+    technologies: List[str] = field(default_factory=None)
     facility_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds'))
 
     class Meta:
@@ -268,7 +273,7 @@ class SubmitAgreementProposalResponse:
 class RespondToProposalRequest:
     public_id: str = field(metadata=dict(data_key='id'))
     accept: bool
-    technology: str = field(default=None)
+    technologies: List[str] = field(default_factory=None)
     facility_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds'))
     amount_percent: int = field(default_factory=list, metadata=dict(allow_none=True, data_key='amountPercent'))
 

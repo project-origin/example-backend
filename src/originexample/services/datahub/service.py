@@ -5,7 +5,6 @@ import requests
 import marshmallow_dataclass as md
 
 from originexample import logger
-from originexample.http import Unauthorized
 from originexample.settings import (
     PROJECT_URL,
     DATAHUB_SERVICE_URL,
@@ -34,6 +33,8 @@ from .models import (
     DeleteDisclosureRequest,
     DeleteDisclosureResponse,
     GetTechnologiesResponse,
+    GetMeasurementListRequest,
+    GetMeasurementListResponse,
 )
 
 
@@ -138,6 +139,20 @@ class DataHubService(object):
             token=token,
             path='/meteringpoints',
             response_schema=md.class_schema(GetMeteringPointsResponse),
+        )
+
+    def get_measurement_list(self, token, request):
+        """
+        :param str token:
+        :param GetMeasurementListRequest request:
+        :rtype: GetMeasurementListResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/measurements',
+            request=request,
+            request_schema=md.class_schema(GetMeasurementListRequest),
+            response_schema=md.class_schema(GetMeasurementListResponse),
         )
 
     def get_production(self, token, request):

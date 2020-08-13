@@ -48,6 +48,7 @@ urls = (
     ('/commodities/measurements/csv', commodities.ExportMeasurementsCSV()),
     ('/commodities/ggo-summary/csv', commodities.ExportGgoSummaryCSV()),
     ('/commodities/ggo-list/csv', commodities.ExportGgoListCSV()),
+    ('/commodities/get-peak-measurement', commodities.GetPeakMeasurement()),
 
     # Disclosure
     ('/disclosure', disclosures.GetDisclosure()),

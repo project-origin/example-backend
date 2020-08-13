@@ -213,8 +213,8 @@ class AgreementQuery(object):
             TradeAgreement.date_from <= b,
             TradeAgreement.date_to >= b,
             sa.or_(
-                TradeAgreement.technology.is_(None),
-                TradeAgreement.technology == ggo.technology,
+                TradeAgreement.technologies.is_(None),
+                TradeAgreement.technologies.any(ggo.technology),
             ),
         ))
 

@@ -226,7 +226,9 @@ class AgreementConsumer(GgoConsumer):
         if self.agreement.amount_percent:
             # Transfer percentage of ggo.amount
             percentage_amount = self.agreement.amount_percent / 100 * ggo.amount
-            desired_amount = floor(percentage_amount) - transferred_amount
+            desired_amount = min(self.agreement.calculated_amount,
+                                 floor(percentage_amount))
+            desired_amount = desired_amount - transferred_amount
         else:
             # Transfer all of ggo.amount
             desired_amount = self.agreement.calculated_amount - transferred_amount

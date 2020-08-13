@@ -1,11 +1,9 @@
 import sqlalchemy as sa
-from sqlalchemy import func
 
 from originexample.auth import User
+from originexample.technology import Technology
 
 from .models import Facility, FacilityFilters, FacilityTag, FacilityType
-from ..settings import UNKNOWN_TECHNOLOGY_LABEL
-from ..technology import Technology
 
 
 class FacilityQuery(object):

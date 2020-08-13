@@ -38,7 +38,8 @@ from .models import (
     GetAgreementDetailsRequest,
     GetAgreementDetailsResponse,
     CancelAgreementRequest,
-    SetTransferPriorityRequest, SetFacilitiesRequest,
+    SetTransferPriorityRequest,
+    SetFacilitiesRequest,
 )
 
 
@@ -116,15 +117,16 @@ class AbstractAgreementController(Controller):
             state=agreement.state,
             public_id=agreement.public_id,
             counterpart_id=agreement.user_from.sub,
-            counterpart=agreement.user_from.name,
+            counterpart=agreement.user_from.company,
             date_from=agreement.date_from,
             date_to=agreement.date_to,
             amount=agreement.amount,
             unit=agreement.unit,
             amount_percent=agreement.amount_percent,
-            technology=agreement.technology,
+            technologies=agreement.technologies,
             reference=agreement.reference,
             limit_to_consumption=agreement.limit_to_consumption,
+            proposal_note=agreement.proposal_note,
         )
 
     def map_outbound_agreement(self, agreement):
@@ -137,17 +139,19 @@ class AbstractAgreementController(Controller):
             state=agreement.state,
             public_id=agreement.public_id,
             counterpart_id=agreement.user_to.sub,
-            counterpart=agreement.user_to.name,
+            counterpart=agreement.user_to.company,
             date_from=agreement.date_from,
             date_to=agreement.date_to,
             amount=agreement.amount,
             unit=agreement.unit,
             amount_percent=agreement.amount_percent,
-            technology=agreement.technology,
+            technologies=agreement.technologies,
             reference=agreement.reference,
             limit_to_consumption=agreement.limit_to_consumption,
-            facilities=self.get_facilities(
-                agreement.user_from, agreement.facility_ids),
+            proposal_note=agreement.proposal_note,
+            facilities=[],
+            # facilities=self.get_facilities(
+            #     agreement.user_from, agreement.facility_ids),
         )
 
     @inject_session
@@ -157,7 +161,7 @@ class AbstractAgreementController(Controller):
         :param list[int] facility_ids:
         :param Session session:
         """
-        return FacilityQuery(session) \
+        query = FacilityQuery(session) \
             .belongs_to(user) \
             .has_any_id(facility_ids) \
             .all()
@@ -567,8 +571,9 @@ class SubmitAgreementProposal(Controller):
             amount=request.amount,
             unit=request.unit,
             amount_percent=request.amount_percent,
-            technology=request.technology,
+            technologies=request.technologies,
             limit_to_consumption=request.limit_to_consumption,
+            proposal_note=request.proposal_note,
             facility_ids=[f.id for f in facilities],
         )
 
@@ -641,8 +646,8 @@ class RespondToProposal(Controller):
         agreement.transfer_priority = self.get_next_priority(
             agreement.user_from, session)
 
-        if request.technology and self.can_set_technology(agreement):
-            agreement.technology = request.technology
+        if request.technologies and self.can_set_technology(agreement):
+            agreement.technologies = request.technologies
 
         if request.facility_ids and self.can_set_facilities(agreement, user):
             agreement.facilities.extend(self.get_facilities(
@@ -656,16 +661,15 @@ class RespondToProposal(Controller):
 
     def can_set_technology(self, agreement):
         """
-        :param User user:
         :param TradeAgreement agreement:
         :rtype: bool
         """
-        return not agreement.technology
+        return not agreement.technologies
 
     def can_set_facilities(self, agreement, user):
         """
-        :param User user:
         :param TradeAgreement agreement:
+        :param User user:
         :rtype: bool
         """
         return agreement.is_outbound_from(user)
