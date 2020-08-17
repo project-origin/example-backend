@@ -8,10 +8,11 @@ from enum import Enum
 from typing import List
 from dataclasses import dataclass, field
 
+from originexample.auth.models import MappedUser
 from originexample.db import ModelBase
 from originexample.facilities.models import MappedFacility
 from originexample.auth import User, user_public_id_exists
-from originexample.common import Unit, DateRange, DataSet
+from originexample.common import Unit, DateRange, DataSet, DateTimeRange
 
 
 class AgreementDirection(Enum):
@@ -238,6 +239,27 @@ class SetTransferPriorityRequest:
 class SetFacilitiesRequest:
     public_id: str = field(metadata=dict(data_key='id'))
     facility_public_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds', missing=[]))
+
+
+# -- FindSuppliers request and response --------------------------------------
+
+
+@dataclass
+class GgoSupplier:
+    sub: str = field(metadata=dict(data_key='id'))
+    company: str
+
+
+@dataclass
+class FindSuppliersRequest:
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+    min_amount: int = field(metadata=dict(data_key='minAmount'))
+
+
+@dataclass
+class FindSuppliersResponse:
+    success: bool
+    suppliers: List[GgoSupplier]
 
 
 # -- SubmitAgreementProposal request and response ----------------------------

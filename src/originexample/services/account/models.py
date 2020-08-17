@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from marshmallow import fields
 from marshmallow_dataclass import NewType
 
-from originexample.common import DateTimeRange
+from originexample.common import DateTimeRange, DateRange
 
 from ..shared_models import SummaryResolution, SummaryGroup
 
@@ -162,6 +162,22 @@ class Forecast:
         :rtype: list[datetime]
         """
         return [begin + self.resolution for begin in self.get_begins()]
+
+
+# -- FindSuppliers request and response --------------------------------------
+
+
+@dataclass
+class FindSuppliersRequest:
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+    min_amount: int = field(metadata=dict(data_key='minAmount'))
+    min_coverage: float = field(metadata=dict(data_key='minCoverage'))
+
+
+@dataclass
+class FindSuppliersResponse:
+    success: bool
+    suppliers: List[str]
 
 
 # -- GetGgoList request and response -----------------------------------------

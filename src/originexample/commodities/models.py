@@ -88,7 +88,7 @@ class GetMeasurementsRequest:
 class GetMeasurementsResponse:
     success: bool
     labels: List[str] = field(default_factory=list)
-    measurements: DataSet = None
+    measurements: DataSet = field(default=None)
 
 
 # -- GetPeakMeasurement request and response ---------------------------------

@@ -12,6 +12,8 @@ from originexample.settings import (
 )
 
 from .models import (
+    FindSuppliersRequest,
+    FindSuppliersResponse,
     GetGgoListRequest,
     GetGgoListResponse,
     GetGgoSummaryRequest,
@@ -111,6 +113,22 @@ class AccountService(object):
             )
 
         return response_model
+
+    # -- Users and accounts --------------------------------------------------
+
+    def find_suppliers(self, token, request):
+        """
+        :param str token:
+        :param FindSuppliersRequest request:
+        :rtype: FindSuppliersResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/accounts/find-suppliers',
+            request=request,
+            request_schema=md.class_schema(FindSuppliersRequest),
+            response_schema=md.class_schema(FindSuppliersResponse),
+        )
 
     # -- GGOs ----------------------------------------------------------------
 

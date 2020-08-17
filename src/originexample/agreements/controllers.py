@@ -12,14 +12,7 @@ from originexample.http import Controller
 from originexample.facilities import Facility, FacilityQuery
 from originexample.common import DateTimeRange, DataSet
 from originexample.pipelines import start_consume_back_in_time_pipeline
-from originexample.services.account import (
-    AccountService,
-    SummaryResolution,
-    SummaryGrouping,
-    TransferFilters,
-    TransferDirection,
-    GetTransferSummaryRequest,
-)
+import originexample.services.account as acc
 
 from .queries import AgreementQuery
 from .models import (
@@ -40,10 +33,12 @@ from .models import (
     CancelAgreementRequest,
     SetTransferPriorityRequest,
     SetFacilitiesRequest,
+    FindSuppliersRequest,
+    FindSuppliersResponse,
 )
 
 
-account = AccountService()
+account = acc.AccountService()
 
 
 # -- Helpers -----------------------------------------------------------------
@@ -57,13 +52,13 @@ def get_resolution(delta):
     :rtype: SummaryResolution
     """
     if delta.days >= (365 * 3):
-        return SummaryResolution.YEAR
+        return acc.SummaryResolution.YEAR
     elif delta.days >= 60:
-        return SummaryResolution.MONTH
+        return acc.SummaryResolution.MONTH
     elif delta.days >= 3:
-        return SummaryResolution.DAY
+        return acc.SummaryResolution.DAY
     else:
-        return SummaryResolution.HOUR
+        return acc.SummaryResolution.HOUR
 
 
 def update_transfer_priorities(user, session):
@@ -154,17 +149,17 @@ class AbstractAgreementController(Controller):
             #     agreement.user_from, agreement.facility_ids),
         )
 
-    @inject_session
-    def get_facilities(self, user, facility_ids, session):
-        """
-        :param User user:
-        :param list[int] facility_ids:
-        :param Session session:
-        """
-        query = FacilityQuery(session) \
-            .belongs_to(user) \
-            .has_any_id(facility_ids) \
-            .all()
+    # @inject_session
+    # def get_facilities(self, user, facility_ids, session):
+    #     """
+    #     :param User user:
+    #     :param list[int] facility_ids:
+    #     :param Session session:
+    #     """
+    #     query = FacilityQuery(session) \
+    #         .belongs_to(user) \
+    #         .has_any_id(facility_ids) \
+    #         .all()
 
 
 class GetAgreementList(AbstractAgreementController):
@@ -290,7 +285,7 @@ class GetAgreementSummary(AbstractAgreementController):
         if request.date_range:
             resolution = get_resolution(request.date_range.delta)
         else:
-            resolution = SummaryResolution.MONTH
+            resolution = acc.SummaryResolution.MONTH
 
         if request.public_id:
             agreement = AgreementQuery(session) \
@@ -299,9 +294,9 @@ class GetAgreementSummary(AbstractAgreementController):
                 .one_or_none()
 
         if request.direction is AgreementDirection.INBOUND:
-            direction = TransferDirection.INBOUND
+            direction = acc.TransferDirection.INBOUND
         elif request.direction is AgreementDirection.OUTBOUND:
-            direction = TransferDirection.OUTBOUND
+            direction = acc.TransferDirection.OUTBOUND
         else:
             direction = None
 
@@ -338,17 +333,20 @@ class GetAgreementSummary(AbstractAgreementController):
             begin_range = None
             fill = False
 
-        response = account.get_transfer_summary(token, GetTransferSummaryRequest(
-            direction=direction,
-            resolution=resolution,
-            utc_offset=utc_offset,
-            fill=fill,
-            grouping=[SummaryGrouping.TECHNOLOGY],
-            filters=TransferFilters(
-                reference=[reference] if reference else None,
-                begin_range=begin_range,
-            ),
-        ))
+        response = account.get_transfer_summary(
+            token=token,
+            request=acc.GetTransferSummaryRequest(
+                direction=direction,
+                resolution=resolution,
+                utc_offset=utc_offset,
+                fill=fill,
+                grouping=[acc.SummaryGrouping.TECHNOLOGY],
+                filters=acc.TransferFilters(
+                    reference=[reference] if reference else None,
+                    begin_range=begin_range,
+                ),
+            )
+        )
 
         datasets = [DataSet(g.group[0], g.values) for g in response.groups]
 
@@ -492,6 +490,56 @@ class SetFacilities(Controller):
             .belongs_to(user) \
             .has_any_public_id(facility_public_ids) \
             .all()
+
+
+class FindSuppliers(Controller):
+    """
+    TODO
+    """
+    Request = md.class_schema(FindSuppliersRequest)
+    Response = md.class_schema(FindSuppliersResponse)
+
+    @requires_login
+    @atomic
+    def handle_request(self, request, user, session):
+        """
+        :param FindSuppliersRequest request:
+        :param User user:
+        :param sqlalchemy.orm.Session session:
+        :rtype: FindSuppliersResponse
+        """
+        return FindSuppliersResponse(
+            success=True,
+            suppliers=self.get_suppliers(request, user),
+        )
+
+    def get_suppliers(self, request, user):
+        """
+        :param FindSuppliersRequest request:
+        :param User user:
+        :rtype: list[User]
+        """
+        response = account.find_suppliers(
+            token=user.access_token,
+            request=acc.FindSuppliersRequest(
+                date_range=request.date_range,
+                min_amount=request.min_amount,
+                min_coverage=0.8,
+            )
+        )
+
+        return [u for u in map(self.get_user, response.suppliers) if u]
+
+    @inject_session
+    def get_user(self, subject, session):
+        """
+        :param str subject:
+        :param sqlalchemy.orm.Session session:
+        :rtype: User
+        """
+        return UserQuery(session) \
+            .has_sub(subject) \
+            .one_or_none()
 
 
 # -- Proposals ---------------------------------------------------------------
@@ -792,8 +840,8 @@ class ExportGgoSummaryCSV(Controller):
         inbound, inbound_labels = self.get_transfer_summary(
             token=user.access_token,
             resolution=resolution,
-            direction=TransferDirection.INBOUND,
-            filters=TransferFilters(
+            direction=acc.TransferDirection.INBOUND,
+            filters=acc.TransferFilters(
                 begin_range=begin_range,
                 reference=reference,
             )
@@ -802,8 +850,8 @@ class ExportGgoSummaryCSV(Controller):
         outbound, outbound_labels = self.get_transfer_summary(
             token=user.access_token,
             resolution=resolution,
-            direction=TransferDirection.OUTBOUND,
-            filters=TransferFilters(
+            direction=acc.TransferDirection.OUTBOUND,
+            filters=acc.TransferFilters(
                 begin_range=begin_range,
                 reference=reference,
             )
@@ -885,15 +933,15 @@ class ExportGgoSummaryCSV(Controller):
         :param TransferFilters filters:
         :rtype: list[SummaryGroup]
         """
-        request = GetTransferSummaryRequest(
+        request = acc.GetTransferSummaryRequest(
             resolution=resolution,
             fill=True,
             filters=filters,
             direction=direction,
             grouping=[
-                SummaryGrouping.TECHNOLOGY,
-                SummaryGrouping.TECHNOLOGY_CODE,
-                SummaryGrouping.FUEL_CODE,
+                acc.SummaryGrouping.TECHNOLOGY,
+                acc.SummaryGrouping.TECHNOLOGY_CODE,
+                acc.SummaryGrouping.FUEL_CODE,
             ],
         )
 
