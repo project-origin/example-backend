@@ -267,6 +267,7 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
             )
         except Exception as e:
             logger.exception('ACCESS TOKEN ERROR?! sub=%s access_token=%s' % (self.agreement.user_to.sub, self.agreement.user_to.access_token))
+            raise
 
         return max(0, min(ggo.amount, remaining_amount, desired_amount))
 
@@ -284,6 +285,7 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
             )
         except Exception as e:
             logger.exception('ACCESS TOKEN ERROR?! sub=%s access_token=%s' % (self.agreement.user_to.sub, self.agreement.user_to.access_token))
+            raise
 
         if measurement is None:
             return 0
