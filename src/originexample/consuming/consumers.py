@@ -260,10 +260,13 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
             )
 
         desired_amount -= already_transferred
-        desired_amount -= get_stored_amount(
-            token=self.agreement.user_to.access_token,
-            begin=ggo.begin,
-        )
+        try:
+            desired_amount -= get_stored_amount(
+                token=self.agreement.user_to.access_token,
+                begin=ggo.begin,
+            )
+        except Exception as e:
+            logger.exception('ACCESS TOKEN ERROR?! sub=%s access_token=%s' % (self.agreement.user_to.sub, self.agreement.user_to.access_token))
 
         return max(0, min(ggo.amount, remaining_amount, desired_amount))
 
@@ -273,11 +276,14 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
         :param datetime.datetime begin:
         :rtype: int
         """
-        measurement = get_consumption(
-            token=facility.user.access_token,
-            gsrn=facility.gsrn,
-            begin=begin,
-        )
+        try:
+            measurement = get_consumption(
+                token=facility.user.access_token,
+                gsrn=facility.gsrn,
+                begin=begin,
+            )
+        except Exception as e:
+            logger.exception('ACCESS TOKEN ERROR?! sub=%s access_token=%s' % (self.agreement.user_to.sub, self.agreement.user_to.access_token))
 
         if measurement is None:
             return 0
