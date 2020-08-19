@@ -22,7 +22,7 @@ from originexample.services.account import (
 # Settings
 RETRY_DELAY = 10
 MAX_RETRIES = (24 * 60 * 60) / RETRY_DELAY
-LOCK_TIMEOUT = 2 * 60
+LOCK_TIMEOUT = 30
 
 # Services / controllers
 controller = GgoConsumerController()
