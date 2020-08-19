@@ -45,7 +45,6 @@ def start_refresh_token_for_subject_pipeline(subject):
 
 @celery_app.task(
     name='refresh_token.get_soon_to_expire_tokens',
-    autoretry_for=(Exception,),
     default_retry_delay=RETRY_DELAY,
     max_retries=MAX_RETRIES,
 )
@@ -69,7 +68,6 @@ def get_soon_to_expire_tokens(session):
 
 @celery_app.task(
     name='refresh_token.refresh_token_for_user',
-    autoretry_for=(Exception,),
     default_retry_delay=RETRY_DELAY,
     max_retries=MAX_RETRIES,
 )
