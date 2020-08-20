@@ -108,11 +108,31 @@ class GgoConsumerController(object):
 
             account_service.compose(user.access_token, request)
 
+    def get_affected_subjects(self, user, ggo, session):
+        """
+        :param User user:
+        :param Ggo ggo:
+        :param Session session:
+        :rtype: list[str]
+        """
+        unique_subjects = set([user.sub])
+
+        for consumer in self.get_consumers(user, ggo, session):
+            unique_subjects.update(consumer.get_affected_subjects())
+
+        return list(unique_subjects)
+
 
 class GgoConsumer(object):
     """
     TODO
     """
+    def get_affected_subjects(self):
+        """
+        :rtype: list[str]
+        """
+        raise NotImplementedError
+
     def consume(self, request, ggo, amount):
         """
         :param ComposeGgoRequest request:
@@ -142,6 +162,12 @@ class RetiringConsumer(GgoConsumer):
 
     def __str__(self):
         return 'RetiringConsumer<%s>' % self.facility.gsrn
+
+    def get_affected_subjects(self):
+        """
+        :rtype: list[str]
+        """
+        return [self.facility.user.sub]
 
     def consume(self, request, ggo, amount):
         """
@@ -194,6 +220,12 @@ class AgreementConsumer(GgoConsumer):
     def __str__(self):
         return 'AgreementConsumer<%s>' % self.reference
 
+    def get_affected_subjects(self):
+        """
+        :rtype: list[str]
+        """
+        return [self.agreement.user_to.sub]
+
     def consume(self, request, ggo, amount):
         """
         :param ComposeGgoRequest request:
@@ -237,6 +269,15 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
 
     def __str__(self):
         return 'AgreementLimitedToConsumptionConsumer<%s>' % self.reference
+
+    def get_affected_subjects(self):
+        """
+        :rtype: list[str]
+        """
+        return [
+            self.agreement.user_from.sub,
+            self.agreement.user_to.sub,
+        ]
 
     def get_desired_amount(self, ggo, already_transferred):
         """
