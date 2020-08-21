@@ -31,12 +31,12 @@ def lock(key, timeout):
                 pass
 
 
-@contextmanager
-def many_locks(keys, timeout):
-    with lock(keys[0], timeout=timeout) as acquired:
-        if not acquired:
-            yield False
-        elif len(keys) == 1:
-            yield True
-        else:
-            yield many_locks(keys[1:], timeout)
+# @contextmanager
+# def many_locks(keys, timeout):
+#     with lock(keys[0], timeout=timeout) as acquired:
+#         if not acquired:
+#             yield False
+#         elif len(keys) == 1:
+#             yield True
+#         else:
+#             yield many_locks(keys[1:], timeout)
