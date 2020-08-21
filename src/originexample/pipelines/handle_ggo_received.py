@@ -6,7 +6,7 @@ from sqlalchemy import orm
 
 from originexample import logger
 from originexample.db import inject_session
-from originexample.tasks import celery_app, many_locks
+from originexample.tasks import celery_app, lock
 from originexample.auth import User, UserQuery
 from originexample.consuming import (
     GgoConsumerController,
@@ -88,13 +88,15 @@ def handle_ggo_received(task, subject, address, ggo_json, session):
         raise task.retry(exc=e)
 
     # Affected subjects TODO
-    affected_subjects = controller.get_affected_subjects(user, ggo, session)
-    lock_keys = [get_lock_key(sub, ggo.begin) for sub in affected_subjects]
+    # affected_subjects = controller.get_affected_subjects(user, ggo, session)
+    # lock_keys = [get_lock_key(sub, ggo.begin) for sub in affected_subjects]
+
+    lock_key = ggo.begin.strftime('%Y-%m-%d-%H-%M')
 
     # This lock is in place to avoid timing issues when executing multiple
     # tasks for the same account at the same time, which can cause
     # the transferred or retired amount to exceed the allowed amount
-    with many_locks(lock_keys, timeout=LOCK_TIMEOUT) as acquired:
+    with lock(lock_key, timeout=LOCK_TIMEOUT) as acquired:
         if not acquired:
             logger.info('Could not acquire lock(s), retrying...', extra=__log_extra)
             raise task.retry()
@@ -118,10 +120,10 @@ def handle_ggo_received(task, subject, address, ggo_json, session):
             raise task.retry(exc=e)
 
 
-def get_lock_key(subject, begin):
-    """
-    :param str subject:
-    :param datetime.datetime begin:
-    :rtype: str
-    """
-    return '%s-%s' % (subject, begin.strftime('%Y-%m-%d-%H-%M'))
+# def get_lock_key(subject, begin):
+#     """
+#     :param str subject:
+#     :param datetime.datetime begin:
+#     :rtype: str
+#     """
+#     return '%s-%s' % (subject, begin.strftime('%Y-%m-%d-%H-%M'))
