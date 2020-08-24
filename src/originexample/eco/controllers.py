@@ -47,23 +47,24 @@ class GetEcoDeclaration(Controller):
         :param User user:
         :rtype: GetEcoDeclarationResponse
         """
-        return account_service.get_eco_declaration(
-            token=user.access_token,
-            request=self.build_account_service_request(request, user),
-        )
+        gsrn_numbers = self.get_gsrn_numbers(user, request.filters)
 
-    def build_account_service_request(self, request, user):
-        """
-        :param GetEcoDeclarationRequest request:
-        :param User user:
-        :rtype: GetEcoDeclarationRequest
-        """
-        return acc.GetEcoDeclarationRequest(
-            gsrn=self.get_gsrn_numbers(user, request.filters),
-            resolution=request.resolution,
-            begin_range=DateTimeRange.from_date_range(request.date_range),
-            utc_offset=request.utc_offset,
-        )
+        if gsrn_numbers:
+            return account_service.get_eco_declaration(
+                token=user.access_token,
+                request=acc.GetEcoDeclarationRequest(
+                    gsrn=gsrn_numbers,
+                    resolution=request.resolution,
+                    begin_range=DateTimeRange.from_date_range(request.date_range),
+                    utc_offset=request.utc_offset,
+                ),
+            )
+        else:
+            return GetEcoDeclarationResponse(
+                success=True,
+                individual=acc.EcoDeclaration.empty(),
+                general=acc.EcoDeclaration.empty(),
+            )
 
     @inject_session
     def get_gsrn_numbers(self, user, filters, session):

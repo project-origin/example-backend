@@ -304,6 +304,21 @@ class EcoDeclaration:
     total_retired_amount: int = field(metadata=dict(data_key='totalRetiredAmount'))
     total_technologies: Dict[str, int] = field(metadata=dict(data_key='totalTechnologies'))
 
+    @classmethod
+    def empty(cls):
+        return cls(
+            emissions={},
+            emissions_per_wh={},
+            consumed_amount={},
+            retired_amount={},
+            technologies={},
+            total_emissions={},
+            total_emissions_per_wh={},
+            total_consumed_amount=0,
+            total_retired_amount=0,
+            total_technologies={},
+        )
+
 
 @dataclass
 class GetEcoDeclarationRequest:
