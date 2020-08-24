@@ -32,6 +32,7 @@ opencensus-ext-requests = "*"
 opencensus-ext-sqlalchemy = "*"
 fire = "*"
 pytz = "*"
+isodate = "*"
 
 [requires]
 python_version = "3.7"

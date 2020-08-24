@@ -1,3 +1,4 @@
+from math import floor
 from itertools import takewhile
 
 from originexample import logger
@@ -69,7 +70,11 @@ class GgoConsumerController(object):
             .is_outbound_from(user) \
             .is_elibigle_to_trade(ggo) \
             .is_operating_at(ggo.begin) \
-            .is_active()
+            .is_active() \
+            .order_by(TradeAgreement.transfer_priority.asc()) \
+            .all()
+
+        # TODO test query ordering (transfer_priority)
 
         for agreement in agreements:
             if agreement.limit_to_consumption:
@@ -218,7 +223,15 @@ class AgreementConsumer(GgoConsumer):
             begin=ggo.begin,
         )
 
-        desired_amount = self.agreement.calculated_amount - transferred_amount
+        if self.agreement.amount_percent:
+            # Transfer percentage of ggo.amount
+            percentage_amount = self.agreement.amount_percent / 100 * ggo.amount
+            desired_amount = min(self.agreement.calculated_amount,
+                                 floor(percentage_amount))
+            desired_amount = desired_amount - transferred_amount
+        else:
+            # Transfer all of ggo.amount
+            desired_amount = self.agreement.calculated_amount - transferred_amount
 
         return max(0, min(ggo.amount, desired_amount))
 

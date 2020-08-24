@@ -98,6 +98,9 @@ class GetMeasurementListRequest:
     filters: MeasurementFilters
     offset: int
     limit: int
+    order: str = field(default='begin')
+    sort: str = field(default='asc')
+    utc_offset: int = field(default=0, metadata=dict(data_key='utcOffset'))
 
 
 @dataclass

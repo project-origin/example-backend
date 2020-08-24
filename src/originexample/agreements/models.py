@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import ARRAY
 from marshmallow import validate, EXCLUDE
 from sqlalchemy.orm import relationship
 from uuid import uuid4
@@ -7,10 +8,11 @@ from enum import Enum
 from typing import List
 from dataclasses import dataclass, field
 
+from originexample.auth.models import MappedUser
 from originexample.db import ModelBase
 from originexample.facilities.models import MappedFacility
 from originexample.auth import User, user_public_id_exists
-from originexample.common import Unit, DateRange, DataSet
+from originexample.common import Unit, DateRange, DataSet, DateTimeRange
 
 
 class AgreementDirection(Enum):
@@ -26,16 +28,6 @@ class AgreementState(Enum):
     WITHDRAWN = 'WITHDRAWN'
 
 
-agreements_facility_association = sa.Table(
-    'agreements_facility_association', ModelBase.metadata,
-
-    sa.Column('agreement_id', sa.Integer(), sa.ForeignKey('agreements_agreement.id'), index=True),
-    sa.Column('facility_id', sa.Integer(), sa.ForeignKey('facilities_facility.id'), index=True),
-
-    sa.UniqueConstraint('agreement_id', 'facility_id'),
-)
-
-
 class TradeAgreement(ModelBase):
     """
     TODO
@@ -43,6 +35,10 @@ class TradeAgreement(ModelBase):
     __tablename__ = 'agreements_agreement'
     __table_args__ = (
         sa.UniqueConstraint('public_id'),
+        sa.CheckConstraint(
+            "(amount_percent IS NULL) OR (amount_percent >= 1 AND amount_percent <= 100)",
+            name="amount_percent_is_NULL_or_between_1_and_100",
+        ),
         sa.CheckConstraint(
             "(limit_to_consumption = 'f' and amount is not null and unit is not null) or (limit_to_consumption = 't')",
             name="limit_to_consumption_OR_amount_and_unit",
@@ -65,19 +61,31 @@ class TradeAgreement(ModelBase):
     user_to = relationship('User', foreign_keys=[user_to_id], lazy='joined')
 
     # Outbound facilities
-    facilities = relationship('Facility', secondary=agreements_facility_association, uselist=True)
+    facility_ids = sa.Column(ARRAY(sa.Integer()))
 
     # Agreement details
     state = sa.Column(sa.Enum(AgreementState), index=True, nullable=False)
     date_from = sa.Column(sa.Date(), nullable=False)
     date_to = sa.Column(sa.Date(), nullable=False)
-    technology = sa.Column(sa.String())
+    technologies = sa.Column(ARRAY(sa.String()), index=True)
     reference = sa.Column(sa.String())
 
-    # Amount
+    # Max. amount to transfer (per begin)
     amount = sa.Column(sa.Integer())
     unit = sa.Column(sa.Enum(Unit))
+
+    # Transfer percentage (though never exceed max. amount - "amount" above)
+    amount_percent = sa.Column(sa.Integer())
+
+    # Limit transferred amount to recipient's consumption?
     limit_to_consumption = sa.Column(sa.Boolean())
+
+    # Lowest number = highest priority
+    # Is set when user accepts the agreement, otherwise None
+    transfer_priority = sa.Column(sa.Integer())
+
+    # Senders proposal note to recipient
+    proposal_note = sa.Column(sa.String())
 
     @property
     def transfer_reference(self):
@@ -127,6 +135,7 @@ class TradeAgreement(ModelBase):
     def cancel(self):
         self.state = AgreementState.CANCELLED
         self.cancelled = func.now()
+        self.transfer_priority = None
 
 # ----------------------------------------------------------------------------
 
@@ -150,10 +159,12 @@ class MappedTradeAgreement:
     date_from: str = field(metadata=dict(data_key='dateFrom'))
     date_to: str = field(metadata=dict(data_key='dateTo'))
     amount: int
+    amount_percent: int = field(metadata=dict(data_key='amountPercent'))
     unit: Unit
-    technology: str
+    technologies: List[str]
     reference: str
     limit_to_consumption: bool = field(metadata=dict(data_key='limitToConsumption'))
+    proposal_note: str = field(metadata=dict(data_key='proposalNote', allow_none=True))
 
     # Only for the outbound-user of an agreement
     facilities: List[MappedFacility] = field(default_factory=list)
@@ -213,6 +224,44 @@ class CancelAgreementRequest:
     public_id: str = field(metadata=dict(data_key='id'))
 
 
+# -- SetTransferPriority request and response ------------------------------------
+
+
+@dataclass
+class SetTransferPriorityRequest:
+    public_ids_prioritized: List[str] = field(default_factory=list, metadata=dict(data_key='idsPrioritized', missing=[]))
+
+
+# -- SetFacilities request and response ------------------------------------
+
+
+@dataclass
+class SetFacilitiesRequest:
+    public_id: str = field(metadata=dict(data_key='id'))
+    facility_public_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds', missing=[]))
+
+
+# -- FindSuppliers request and response --------------------------------------
+
+
+@dataclass
+class GgoSupplier:
+    sub: str = field(metadata=dict(data_key='id'))
+    company: str
+
+
+@dataclass
+class FindSuppliersRequest:
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+    min_amount: int = field(metadata=dict(data_key='minAmount'))
+
+
+@dataclass
+class FindSuppliersResponse:
+    success: bool
+    suppliers: List[GgoSupplier]
+
+
 # -- SubmitAgreementProposal request and response ----------------------------
 
 
@@ -223,9 +272,11 @@ class SubmitAgreementProposalRequest:
     counterpart_id: str = field(metadata=dict(data_key='counterpartId', validate=(validate.Length(min=1), user_public_id_exists)))
     amount: int
     unit: Unit
+    amount_percent: int = field(metadata=dict(allow_none=True, data_key='amountPercent', validate=validate.Range(min=1, max=100)))
     date: DateRange
     limit_to_consumption: bool = field(metadata=dict(data_key='limitToConsumption'))
-    technology: str = field(default=None)
+    proposal_note: str = field(metadata=dict(data_key='proposalNote', allow_none=True))
+    technologies: List[str] = field(default_factory=None)
     facility_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds'))
 
     class Meta:
@@ -244,13 +295,9 @@ class SubmitAgreementProposalResponse:
 class RespondToProposalRequest:
     public_id: str = field(metadata=dict(data_key='id'))
     accept: bool
-    technology: str = field(default=None)
+    technologies: List[str] = field(default_factory=None)
     facility_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds'))
-
-
-@dataclass
-class RespondToProposalResponse:
-    success: bool
+    amount_percent: int = field(default_factory=list, metadata=dict(allow_none=True, data_key='amountPercent'))
 
 
 # -- WithdrawProposal request and response -----------------------------------
@@ -259,11 +306,6 @@ class RespondToProposalResponse:
 @dataclass
 class WithdrawProposalRequest:
     public_id: str = field(metadata=dict(data_key='id'))
-
-
-@dataclass
-class WithdrawProposalResponse:
-    success: bool
 
 
 # -- CountPendingProposals request and response ------------------------------
