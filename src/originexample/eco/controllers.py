@@ -55,6 +55,7 @@ class GetEcoDeclaration(Controller):
                 request=self.build_account_service_request(request, user, gsrn_numbers),
             )
         else:
+            raise Exception('1')
             return GetEcoDeclarationResponse(
                 success=True,
                 individual=acc.EcoDeclaration.empty(),
