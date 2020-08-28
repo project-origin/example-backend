@@ -41,7 +41,7 @@ def test__AgreementLimitedToConsumptionConsumer__get_desired_amount__should_retu
         measured_amount, expected_amount, already_transferred_amount):
 
     begin = datetime(2020, 1, 1, 0, 0, tzinfo=timezone.utc)
-    agreement = Mock(public_id='PUBLIC_ID', calculated_amount=agreement_amount)
+    agreement = Mock(public_id='PUBLIC_ID', calculated_amount=agreement_amount, amount_percent=0)
     ggo = Mock(begin=begin, amount=ggo_amount)
     facility1 = Mock(gsrn='GSRN1')
     facility2 = Mock(gsrn='GSRN2')

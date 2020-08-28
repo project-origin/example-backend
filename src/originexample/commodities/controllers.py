@@ -13,6 +13,7 @@ from originexample.services import SummaryResolution
 from originexample.services import account as acc
 from originexample.services.datahub import (
     DataHubService,
+    GetMeasurementListRequest,
     GetMeasurementSummaryRequest,
     MeasurementFilters,
     SummaryGroup,
@@ -28,7 +29,7 @@ from .models import (
     GetMeasurementsRequest,
     GetMeasurementsResponse,
     GetGgoSummaryRequest,
-    GetGgoSummaryResponse,
+    GetGgoSummaryResponse, GetPeakMeasurementRequest, GetPeakMeasurementResponse,
 )
 
 
@@ -121,26 +122,23 @@ def get_measurements(token, measurement_type, resolution, begin_range, gsrn, utc
     :param list[str] gsrn:
     :param int utc_offset:
     :param bool fill:
-    :rtype: DataSet
+    :rtype: (List[SummaryGroup], List[str])
     """
-    request = GetMeasurementSummaryRequest(
-        utc_offset=utc_offset,
-        resolution=resolution,
-        fill=fill,
-        filters=MeasurementFilters(
-            begin_range=begin_range,
-            type=measurement_type,
-            gsrn=gsrn,
+    response = datahub_service.get_measurement_summary(
+        token=token,
+        request=GetMeasurementSummaryRequest(
+            utc_offset=utc_offset,
+            resolution=resolution,
+            fill=fill,
+            filters=MeasurementFilters(
+                begin_range=begin_range,
+                type=measurement_type,
+                gsrn=gsrn,
+            ),
         ),
     )
 
-    response = datahub_service.get_measurement_summary(token, request)
-    label = measurement_type.value.capitalize()
-
-    if response.groups:
-        return DataSet(label=label, values=response.groups[0].values)
-    else:
-        return DataSet(label=label)
+    return response.groups, response.labels
 
 
 # -- Controllers -------------------------------------------------------------
@@ -319,7 +317,7 @@ class GetMeasurements(Controller):
         begin_range = DateTimeRange.from_date_range(request.date_range)
         resolution = get_resolution(begin_range.delta)
 
-        measurements = get_measurements(
+        groups, labels = get_measurements(
             token=user.access_token,
             measurement_type=request.measurement_type,
             resolution=resolution,
@@ -329,8 +327,16 @@ class GetMeasurements(Controller):
             fill=True,
         )
 
+        label = request.measurement_type.value.capitalize()
+
+        if groups:
+            measurements = DataSet(label=label, values=groups[0].values)
+        else:
+            measurements = DataSet(label=label)
+
         return GetMeasurementsResponse(
             success=True,
+            labels=labels,
             measurements=measurements,
         )
 
@@ -718,3 +724,47 @@ class ExportMeasurementsCSV(Controller):
         response = datahub_service.get_measurement_summary(token, request)
 
         return response.groups, response.labels
+
+
+class GetPeakMeasurement(Controller):
+    """
+    TODO
+    """
+    Request = md.class_schema(GetPeakMeasurementRequest)
+    Response = md.class_schema(GetPeakMeasurementResponse)
+
+    @requires_login
+    def handle_request(self, request, user):
+        """
+        :param GetPeakMeasurementRequest request:
+        :param User user:
+        :rtype: GetPeakMeasurementResponse
+        """
+        request = GetMeasurementListRequest(
+            offset=0,
+            limit=1,
+            order='amount',
+            sort='desc',
+            utc_offset=request.utc_offset,
+            filters=MeasurementFilters(
+                begin_range=DateTimeRange.from_date_range(request.date_range),
+                type=request.measurement_type,
+            )
+        )
+
+        response = datahub_service.get_measurement_list(
+            token=user.access_token,
+            request=request,
+        )
+
+        if len(response.measurements) > 0:
+            success = True
+            measurement = response.measurements[0]
+        else:
+            success = False
+            measurement = None
+
+        return GetPeakMeasurementResponse(
+            success=success,
+            measurement=measurement,
+        )

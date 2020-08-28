@@ -12,14 +12,7 @@ from originexample.http import Controller
 from originexample.facilities import Facility, FacilityQuery
 from originexample.common import DateTimeRange, DataSet
 from originexample.pipelines import start_consume_back_in_time_pipeline
-from originexample.services.account import (
-    AccountService,
-    SummaryResolution,
-    SummaryGrouping,
-    TransferFilters,
-    TransferDirection,
-    GetTransferSummaryRequest,
-)
+import originexample.services.account as acc
 
 from .queries import AgreementQuery
 from .models import (
@@ -33,18 +26,19 @@ from .models import (
     SubmitAgreementProposalRequest,
     SubmitAgreementProposalResponse,
     RespondToProposalRequest,
-    RespondToProposalResponse,
     CountPendingProposalsResponse,
     WithdrawProposalRequest,
-    WithdrawProposalResponse,
     GetAgreementDetailsRequest,
     GetAgreementDetailsResponse,
     CancelAgreementRequest,
     SetTransferPriorityRequest,
+    SetFacilitiesRequest,
+    FindSuppliersRequest,
+    FindSuppliersResponse,
 )
 
 
-account = AccountService()
+account = acc.AccountService()
 
 
 # -- Helpers -----------------------------------------------------------------
@@ -58,13 +52,13 @@ def get_resolution(delta):
     :rtype: SummaryResolution
     """
     if delta.days >= (365 * 3):
-        return SummaryResolution.YEAR
+        return acc.SummaryResolution.YEAR
     elif delta.days >= 60:
-        return SummaryResolution.MONTH
+        return acc.SummaryResolution.MONTH
     elif delta.days >= 3:
-        return SummaryResolution.DAY
+        return acc.SummaryResolution.DAY
     else:
-        return SummaryResolution.HOUR
+        return acc.SummaryResolution.HOUR
 
 
 def update_transfer_priorities(user, session):
@@ -118,14 +112,16 @@ class AbstractAgreementController(Controller):
             state=agreement.state,
             public_id=agreement.public_id,
             counterpart_id=agreement.user_from.sub,
-            counterpart=agreement.user_from.name,
+            counterpart=agreement.user_from.company,
             date_from=agreement.date_from,
             date_to=agreement.date_to,
             amount=agreement.amount,
             unit=agreement.unit,
-            technology=agreement.technology,
+            amount_percent=agreement.amount_percent,
+            technologies=agreement.technologies,
             reference=agreement.reference,
             limit_to_consumption=agreement.limit_to_consumption,
+            proposal_note=agreement.proposal_note,
         )
 
     def map_outbound_agreement(self, agreement):
@@ -138,16 +134,32 @@ class AbstractAgreementController(Controller):
             state=agreement.state,
             public_id=agreement.public_id,
             counterpart_id=agreement.user_to.sub,
-            counterpart=agreement.user_to.name,
+            counterpart=agreement.user_to.company,
             date_from=agreement.date_from,
             date_to=agreement.date_to,
             amount=agreement.amount,
             unit=agreement.unit,
-            technology=agreement.technology,
+            amount_percent=agreement.amount_percent,
+            technologies=agreement.technologies,
             reference=agreement.reference,
-            facilities=list(agreement.facilities),
             limit_to_consumption=agreement.limit_to_consumption,
+            proposal_note=agreement.proposal_note,
+            facilities=[],
+            # facilities=self.get_facilities(
+            #     agreement.user_from, agreement.facility_ids),
         )
+
+    # @inject_session
+    # def get_facilities(self, user, facility_ids, session):
+    #     """
+    #     :param User user:
+    #     :param list[int] facility_ids:
+    #     :param Session session:
+    #     """
+    #     query = FacilityQuery(session) \
+    #         .belongs_to(user) \
+    #         .has_any_id(facility_ids) \
+    #         .all()
 
 
 class GetAgreementList(AbstractAgreementController):
@@ -273,7 +285,7 @@ class GetAgreementSummary(AbstractAgreementController):
         if request.date_range:
             resolution = get_resolution(request.date_range.delta)
         else:
-            resolution = SummaryResolution.MONTH
+            resolution = acc.SummaryResolution.MONTH
 
         if request.public_id:
             agreement = AgreementQuery(session) \
@@ -282,9 +294,9 @@ class GetAgreementSummary(AbstractAgreementController):
                 .one_or_none()
 
         if request.direction is AgreementDirection.INBOUND:
-            direction = TransferDirection.INBOUND
+            direction = acc.TransferDirection.INBOUND
         elif request.direction is AgreementDirection.OUTBOUND:
-            direction = TransferDirection.OUTBOUND
+            direction = acc.TransferDirection.OUTBOUND
         else:
             direction = None
 
@@ -321,17 +333,20 @@ class GetAgreementSummary(AbstractAgreementController):
             begin_range = None
             fill = False
 
-        response = account.get_transfer_summary(token, GetTransferSummaryRequest(
-            direction=direction,
-            resolution=resolution,
-            utc_offset=utc_offset,
-            fill=fill,
-            grouping=[SummaryGrouping.TECHNOLOGY],
-            filters=TransferFilters(
-                reference=[reference] if reference else None,
-                begin_range=begin_range,
-            ),
-        ))
+        response = account.get_transfer_summary(
+            token=token,
+            request=acc.GetTransferSummaryRequest(
+                direction=direction,
+                resolution=resolution,
+                utc_offset=utc_offset,
+                fill=fill,
+                grouping=[acc.SummaryGrouping.TECHNOLOGY],
+                filters=acc.TransferFilters(
+                    reference=[reference] if reference else None,
+                    begin_range=begin_range,
+                ),
+            )
+        )
 
         datasets = [DataSet(g.group[0], g.values) for g in response.groups]
 
@@ -438,6 +453,95 @@ class SetTransferPriority(Controller):
         update_transfer_priorities(*args, **kwargs)
 
 
+class SetFacilities(Controller):
+    """
+    TODO
+    """
+    Request = md.class_schema(SetFacilitiesRequest)
+
+    @requires_login
+    @atomic
+    def handle_request(self, request, user, session):
+        """
+        :param SetFacilitiesRequest request:
+        :param User user:
+        :param sqlalchemy.orm.Session session:
+        :rtype: bool
+        """
+        agreement = AgreementQuery(session) \
+            .belongs_to(user) \
+            .has_public_id(request.public_id) \
+            .one_or_none()
+
+        if agreement:
+            agreement.facility_ids = [f.id for f in self.get_facilities(
+                user, request.facility_public_ids, session)]
+            return True
+        else:
+            return False
+
+    def get_facilities(self, user, facility_public_ids, session):
+        """
+        :param User user:
+        :param list[str] facility_public_ids:
+        :param Session session:
+        """
+        return FacilityQuery(session) \
+            .belongs_to(user) \
+            .has_any_public_id(facility_public_ids) \
+            .all()
+
+
+class FindSuppliers(Controller):
+    """
+    TODO
+    """
+    Request = md.class_schema(FindSuppliersRequest)
+    Response = md.class_schema(FindSuppliersResponse)
+
+    @requires_login
+    @atomic
+    def handle_request(self, request, user, session):
+        """
+        :param FindSuppliersRequest request:
+        :param User user:
+        :param sqlalchemy.orm.Session session:
+        :rtype: FindSuppliersResponse
+        """
+        return FindSuppliersResponse(
+            success=True,
+            suppliers=self.get_suppliers(request, user),
+        )
+
+    def get_suppliers(self, request, user):
+        """
+        :param FindSuppliersRequest request:
+        :param User user:
+        :rtype: list[User]
+        """
+        response = account.find_suppliers(
+            token=user.access_token,
+            request=acc.FindSuppliersRequest(
+                date_range=request.date_range,
+                min_amount=request.min_amount,
+                min_coverage=0.8,
+            )
+        )
+
+        return [u for u in map(self.get_user, response.suppliers) if u]
+
+    @inject_session
+    def get_user(self, subject, session):
+        """
+        :param str subject:
+        :param sqlalchemy.orm.Session session:
+        :rtype: User
+        """
+        return UserQuery(session) \
+            .has_sub(subject) \
+            .one_or_none()
+
+
 # -- Proposals ---------------------------------------------------------------
 
 
@@ -514,12 +618,12 @@ class SubmitAgreementProposal(Controller):
             reference=request.reference,
             amount=request.amount,
             unit=request.unit,
-            technology=request.technology,
+            amount_percent=request.amount_percent,
+            technologies=request.technologies,
             limit_to_consumption=request.limit_to_consumption,
+            proposal_note=request.proposal_note,
+            facility_ids=[f.id for f in facilities],
         )
-
-        if facilities:
-            agreement.facilities.extend(facilities)
 
         return agreement
 
@@ -540,7 +644,6 @@ class RespondToProposal(Controller):
     TODO
     """
     Request = md.class_schema(RespondToProposalRequest)
-    Response = md.class_schema(RespondToProposalResponse)
 
     @requires_login
     @atomic
@@ -549,7 +652,7 @@ class RespondToProposal(Controller):
         :param RespondToProposalRequest request:
         :param User user:
         :param Session session:
-        :rtype: RespondToProposalResponse
+        :rtype: bool
         """
         agreement = AgreementQuery(session) \
             .has_public_id(request.public_id) \
@@ -557,7 +660,7 @@ class RespondToProposal(Controller):
             .one_or_none()
 
         if not agreement:
-            return RespondToProposalResponse(success=False)
+            return False
 
         if request.accept:
             self.accept_proposal(request, agreement, user, session)
@@ -578,7 +681,7 @@ class RespondToProposal(Controller):
                 'agreement_id': agreement.id,
             })
 
-        return RespondToProposalResponse(success=True)
+        return True
 
     def accept_proposal(self, request, agreement, user, session):
         """
@@ -591,8 +694,8 @@ class RespondToProposal(Controller):
         agreement.transfer_priority = self.get_next_priority(
             agreement.user_from, session)
 
-        if request.technology and self.can_set_technology(agreement, user):
-            agreement.technology = request.technology
+        if request.technologies and self.can_set_technology(agreement):
+            agreement.technologies = request.technologies
 
         if request.facility_ids and self.can_set_facilities(agreement, user):
             agreement.facilities.extend(self.get_facilities(
@@ -601,15 +704,25 @@ class RespondToProposal(Controller):
                 session=session,
             ))
 
-    def can_set_technology(self, agreement, user):
+        if request.amount_percent and self.can_set_amount_percent(agreement, user):
+            agreement.amount_percent = request.amount_percent
+
+    def can_set_technology(self, agreement):
         """
-        :param User user:
         :param TradeAgreement agreement:
         :rtype: bool
         """
-        return not agreement.technology and agreement.is_outbound_from(user)
+        return not agreement.technologies
 
     def can_set_facilities(self, agreement, user):
+        """
+        :param TradeAgreement agreement:
+        :param User user:
+        :rtype: bool
+        """
+        return agreement.is_outbound_from(user)
+
+    def can_set_amount_percent(self, agreement, user):
         """
         :param User user:
         :param TradeAgreement agreement:
@@ -649,7 +762,6 @@ class WithdrawProposal(Controller):
     TODO
     """
     Request = md.class_schema(WithdrawProposalRequest)
-    Response = md.class_schema(WithdrawProposalResponse)
 
     @requires_login
     @atomic
@@ -658,7 +770,7 @@ class WithdrawProposal(Controller):
         :param WithdrawProposalRequest request:
         :param User user:
         :param Session session:
-        :rtype: WithdrawProposalResponse
+        :rtype: bool
         """
         agreement = AgreementQuery(session) \
             .has_public_id(request.public_id) \
@@ -666,12 +778,11 @@ class WithdrawProposal(Controller):
             .is_pending() \
             .one_or_none()
 
-        if not agreement:
-            return RespondToProposalResponse(success=False)
-
-        agreement.state = AgreementState.WITHDRAWN
-
-        return WithdrawProposalResponse(success=True)
+        if agreement:
+            agreement.state = AgreementState.WITHDRAWN
+            return True
+        else:
+            return False
 
 
 class CountPendingProposals(Controller):
@@ -686,7 +797,7 @@ class CountPendingProposals(Controller):
         """
         :param User user:
         :param Session session:
-        :rtype: RespondToProposalResponse
+        :rtype: CountPendingProposalsResponse
         """
         count = AgreementQuery(session) \
             .is_awaiting_response_by(user) \
@@ -729,8 +840,8 @@ class ExportGgoSummaryCSV(Controller):
         inbound, inbound_labels = self.get_transfer_summary(
             token=user.access_token,
             resolution=resolution,
-            direction=TransferDirection.INBOUND,
-            filters=TransferFilters(
+            direction=acc.TransferDirection.INBOUND,
+            filters=acc.TransferFilters(
                 begin_range=begin_range,
                 reference=reference,
             )
@@ -739,8 +850,8 @@ class ExportGgoSummaryCSV(Controller):
         outbound, outbound_labels = self.get_transfer_summary(
             token=user.access_token,
             resolution=resolution,
-            direction=TransferDirection.OUTBOUND,
-            filters=TransferFilters(
+            direction=acc.TransferDirection.OUTBOUND,
+            filters=acc.TransferFilters(
                 begin_range=begin_range,
                 reference=reference,
             )
@@ -822,15 +933,15 @@ class ExportGgoSummaryCSV(Controller):
         :param TransferFilters filters:
         :rtype: list[SummaryGroup]
         """
-        request = GetTransferSummaryRequest(
+        request = acc.GetTransferSummaryRequest(
             resolution=resolution,
             fill=True,
             filters=filters,
             direction=direction,
             grouping=[
-                SummaryGrouping.TECHNOLOGY,
-                SummaryGrouping.TECHNOLOGY_CODE,
-                SummaryGrouping.FUEL_CODE,
+                acc.SummaryGrouping.TECHNOLOGY,
+                acc.SummaryGrouping.TECHNOLOGY_CODE,
+                acc.SummaryGrouping.FUEL_CODE,
             ],
         )
 

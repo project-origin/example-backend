@@ -12,18 +12,22 @@ from originexample.settings import (
 )
 
 from .models import (
+    FindSuppliersRequest,
+    FindSuppliersResponse,
     GetGgoListRequest,
     GetGgoListResponse,
     GetGgoSummaryRequest,
     GetGgoSummaryResponse,
-    GetTotalAmountRequest,
-    GetTotalAmountResponse,
     ComposeGgoRequest,
     ComposeGgoResponse,
     GetTransferSummaryRequest,
     GetTransferSummaryResponse,
     GetTransferredAmountRequest,
     GetTransferredAmountResponse,
+    GetTotalAmountRequest,
+    GetTotalAmountResponse,
+    GetEcoDeclarationRequest,
+    GetEcoDeclarationResponse,
     GetForecastRequest,
     GetForecastResponse,
     GetForecastListRequest,
@@ -103,14 +107,30 @@ class AccountService(object):
                 status_code=response.status_code,
                 response_body=str(response.content),
             )
-        except marshmallow.ValidationError:
+        except marshmallow.ValidationError as e:
             raise AccountServiceError(
-                f'Failed to validate response JSON: {url}\n\n{response.content}',
+                f'Failed to validate response JSON: {url}\n\n{response.content}\n\n{str(e)}',
                 status_code=response.status_code,
                 response_body=str(response.content),
             )
 
         return response_model
+
+    # -- Users and accounts --------------------------------------------------
+
+    def find_suppliers(self, token, request):
+        """
+        :param str token:
+        :param FindSuppliersRequest request:
+        :rtype: FindSuppliersResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/accounts/find-suppliers',
+            request=request,
+            request_schema=md.class_schema(FindSuppliersRequest),
+            response_schema=md.class_schema(FindSuppliersResponse),
+        )
 
     # -- GGOs ----------------------------------------------------------------
 
@@ -197,6 +217,56 @@ class AccountService(object):
             request_schema=md.class_schema(GetTotalAmountRequest),
             response_schema=md.class_schema(GetTotalAmountResponse),
         )
+
+    def get_eco_declaration(self, token, request):
+        """
+        :param str token:
+        :param GetEcoDeclarationRequest request:
+        :rtype: GetEcoDeclarationResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/eco-declaration',
+            request=request,
+            request_schema=md.class_schema(GetEcoDeclarationRequest),
+            response_schema=md.class_schema(GetEcoDeclarationResponse),
+        )
+
+    def export_eco_declaration_pdf(self, token, request):
+        """
+        :param str token:
+        :param GetEcoDeclarationRequest request:
+        :returns: File-like object
+        """
+        path = '/eco-declaration/export-pdf'
+        request_schema = md.class_schema(GetEcoDeclarationRequest)
+
+        url = '%s%s' % (ACCOUNT_SERVICE_URL, path)
+        headers = {TOKEN_HEADER: f'Bearer {token}'}
+        body = request_schema().dump(request)
+
+        try:
+            response = requests.post(
+                url=url,
+                json=body,
+                headers=headers,
+                verify=not DEBUG,
+            )
+        except:
+            raise AccountServiceConnectionError(
+                'Failed to POST request to AccountService')
+
+        if response.status_code != 200:
+            raise AccountServiceError(
+                (
+                    f'Invoking AccountService resulted in status code {response.status_code}: '
+                    f'{url}\n\n{response.content}'
+                ),
+                status_code=response.status_code,
+                response_body=str(response.content),
+            )
+
+        return response.content
 
     # -- Forecasts -----------------------------------------------------------
 

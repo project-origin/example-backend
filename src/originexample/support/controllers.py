@@ -1,7 +1,10 @@
 import re
 import sendgrid
 import marshmallow_dataclass as md
-from sendgrid.helpers.mail import Email, Content, Mail, To, Attachment, FileContent, FileName, FileType, Disposition
+from sendgrid.helpers.mail import (
+    Email, Content, Mail, To, Attachment, FileContent,
+    FileName, FileType, Disposition,
+)
 
 from originexample.http import Controller, BadRequest
 from originexample.auth import User, requires_login
@@ -26,6 +29,7 @@ Sender: %(name)s <%(email)s>
 Company: %(company)s
 Phone: %(phone)s
 User ID: %(sub)s
+Link: %(link)s
 ------------------------------------------------------------------------------
 
 %(message)s"""
@@ -50,6 +54,7 @@ class SubmitSupportEnquiry(Controller):
             'email': request.email,
             'name': user.name,
             'company': user.company,
+            'link': request.link,
             'phone': request.phone,
             'message': request.message,
         }

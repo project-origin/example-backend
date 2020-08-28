@@ -1,11 +1,9 @@
 import sqlalchemy as sa
-from sqlalchemy import func
 
 from originexample.auth import User
+from originexample.technology import Technology
 
 from .models import Facility, FacilityFilters, FacilityTag, FacilityType
-from ..settings import UNKNOWN_TECHNOLOGY_LABEL
-from ..technology import Technology
 
 
 class FacilityQuery(object):
@@ -58,6 +56,15 @@ class FacilityQuery(object):
             ))
 
         return FacilityQuery(self.session, q)
+
+    def has_any_id(self, ids):
+        """
+        :param list[int] ids:
+        :rtype: FacilityQuery
+        """
+        return FacilityQuery(self.session, self.q.filter(
+            Facility.id.in_(ids),
+        ))
 
     def has_public_id(self, public_id):
         """

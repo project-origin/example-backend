@@ -1,13 +1,13 @@
 import isodate
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Any
 from datetime import datetime
 from dataclasses import dataclass, field
 
 from marshmallow import fields
 from marshmallow_dataclass import NewType
 
-from originexample.common import DateTimeRange
+from originexample.common import DateTimeRange, DateRange
 
 from ..shared_models import SummaryResolution, SummaryGroup
 
@@ -164,6 +164,22 @@ class Forecast:
         return [begin + self.resolution for begin in self.get_begins()]
 
 
+# -- FindSuppliers request and response --------------------------------------
+
+
+@dataclass
+class FindSuppliersRequest:
+    date_range: DateRange = field(metadata=dict(data_key='dateRange'))
+    min_amount: int = field(metadata=dict(data_key='minAmount'))
+    min_coverage: float = field(metadata=dict(data_key='minCoverage'))
+
+
+@dataclass
+class FindSuppliersResponse:
+    success: bool
+    suppliers: List[str]
+
+
 # -- GetGgoList request and response -----------------------------------------
 
 
@@ -199,20 +215,6 @@ class GetGgoSummaryResponse:
     success: bool
     labels: List[str] = field(default_factory=list)
     groups: List[SummaryGroup] = field(default_factory=list)
-
-
-# -- GetTotalAmount request and response -------------------------------------
-
-
-@dataclass
-class GetTotalAmountRequest:
-    filters: GgoFilters
-
-
-@dataclass
-class GetTotalAmountResponse:
-    success: bool
-    amount: int
 
 
 # -- GetTransferSummary request and response ---------------------------------
@@ -262,6 +264,75 @@ class GetTransferredAmountRequest:
 class GetTransferredAmountResponse:
     success: bool
     amount: int
+
+
+# -- GetTotalAmount request and response -------------------------------------
+
+
+@dataclass
+class GetTotalAmountRequest:
+    filters: GgoFilters
+
+
+@dataclass
+class GetTotalAmountResponse:
+    success: bool
+    amount: int
+
+
+# -- GetEcoDeclaration request and response -------------------------------------
+
+
+class EcoDeclarationResolution(Enum):
+    all = 'all'
+    year = 'year'
+    month = 'month'
+    day = 'day'
+    hour = 'hour'
+
+
+@dataclass
+class EcoDeclaration:
+    emissions: Dict[datetime, Dict[str, float]] = field(metadata=dict(data_key='emissions'))
+    emissions_per_wh: Dict[datetime, Dict[str, float]] = field(metadata=dict(data_key='emissionsPerWh'))
+    consumed_amount: Dict[datetime, float] = field(metadata=dict(data_key='consumedAmount'))
+    retired_amount: Dict[datetime, float] = field(metadata=dict(data_key='retiredAmount'))
+    technologies: Dict[datetime, Dict[str, float]]
+    total_emissions: Dict[str, float] = field(metadata=dict(data_key='totalEmissions'))
+    total_emissions_per_wh: Dict[str, Any] = field(metadata=dict(data_key='totalEmissionsPerWh'))
+    total_consumed_amount: int = field(metadata=dict(data_key='totalConsumedAmount'))
+    total_retired_amount: int = field(metadata=dict(data_key='totalRetiredAmount'))
+    total_technologies: Dict[str, int] = field(metadata=dict(data_key='totalTechnologies'))
+
+    @classmethod
+    def empty(cls):
+        return cls(
+            emissions={},
+            emissions_per_wh={},
+            consumed_amount={},
+            retired_amount={},
+            technologies={},
+            total_emissions={},
+            total_emissions_per_wh={},
+            total_consumed_amount=0,
+            total_retired_amount=0,
+            total_technologies={},
+        )
+
+
+@dataclass
+class GetEcoDeclarationRequest:
+    gsrn: List[str]
+    resolution: EcoDeclarationResolution
+    begin_range: DateTimeRange = field(metadata=dict(data_key='beginRange'))
+    utc_offset: int = field(metadata=dict(data_key='utcOffset'))
+
+
+@dataclass
+class GetEcoDeclarationResponse:
+    success: bool
+    general: EcoDeclaration
+    individual: EcoDeclaration
 
 
 # -- GetForecast request and response ----------------------------------------

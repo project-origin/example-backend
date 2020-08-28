@@ -38,7 +38,7 @@ def test__AgreementConsumer__get_desired_amount__should_return_correct_amount(
     get_transferred_amount_mock.return_value = transferred_amount
 
     begin = datetime(2020, 1, 1, 0, 0, tzinfo=timezone.utc)
-    agreement = Mock(public_id='PUBLIC_ID', calculated_amount=agreement_amount)
+    agreement = Mock(public_id='PUBLIC_ID', calculated_amount=agreement_amount, amount_percent=0)
     ggo = Mock(begin=begin, amount=ggo_amount)
     uut = AgreementConsumer(agreement=agreement)
 
