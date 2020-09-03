@@ -41,6 +41,8 @@ Name | Description | Example
 `DATABASE_URI` | Database connection string for SQLAlchemy | `postgresql://scott:tiger@localhost/mydatabase`
 `DATABASE_CONN_POLL_SIZE` | Connection pool size per container | `10`
 **E-mail:** | |
+`EMAIL_FROM_NAME` | From-name in outgoing e-mails | `John Doe`
+`EMAIL_FROM_ADDRESS` | From-address in outgoing e-mails | `john@doe.com`
 `EMAIL_TO_ADDRESS` | SendGrid API key | `support@energinet.dk`
 `EMAIL_PREFIX` | SendGrid API key | `eloverblik - `
 `SENDGRID_API_KEY` | SendGrid API key | `foobar`
