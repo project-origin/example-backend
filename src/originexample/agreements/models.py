@@ -88,6 +88,16 @@ class TradeAgreement(ModelBase):
     proposal_note = sa.Column(sa.String())
 
     @property
+    def user_proposed_to(self):
+        """
+        :rtype: User
+        """
+        if self.user_from_id == self.user_proposed_id:
+            return self.user_to
+        else:
+            return self.user_from
+
+    @property
     def transfer_reference(self):
         """
         :rtype: str

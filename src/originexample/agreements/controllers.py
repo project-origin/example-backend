@@ -15,6 +15,11 @@ from originexample.pipelines import start_consume_back_in_time_pipeline
 import originexample.services.account as acc
 
 from .queries import AgreementQuery
+from .email import (
+    send_invitation_received_email,
+    send_invitation_accepted_email,
+    send_invitation_declined_email,
+)
 from .models import (
     TradeAgreement,
     MappedTradeAgreement,
@@ -597,6 +602,9 @@ class SubmitAgreementProposal(Controller):
             'agreement_id': agreement.id,
         })
 
+        # Send e-mail to recipient of proposal
+        send_invitation_received_email(agreement)
+
         return SubmitAgreementProposalResponse(success=True)
 
     def create_pending_agreement(self, request, user, user_from, user_to, facilities):
@@ -663,23 +671,11 @@ class RespondToProposal(Controller):
             return False
 
         if request.accept:
+            # Accept proposal
             self.accept_proposal(request, agreement, user, session)
-            logger.info(f'User accepted to TradeAgreement proposal', extra={
-                'subject': user.sub,
-                'agreement_id': agreement.id,
-            })
-
-            start_consume_back_in_time_pipeline(
-                user=agreement.user_from,
-                begin_from=datetime.fromordinal(agreement.date_from.toordinal()) - timedelta(days=2),
-                begin_to=datetime.fromordinal(agreement.date_to.toordinal()) + timedelta(days=2),
-            )
         else:
-            agreement.decline_proposal()
-            logger.info(f'User declined to TradeAgreement proposal', extra={
-                'subject': user.sub,
-                'agreement_id': agreement.id,
-            })
+            # Decline proposal
+            self.decline_proposal(agreement, user)
 
         return True
 
@@ -706,6 +702,35 @@ class RespondToProposal(Controller):
 
         if request.amount_percent and self.can_set_amount_percent(agreement, user):
             agreement.amount_percent = request.amount_percent
+
+        logger.info(f'User accepted to TradeAgreement proposal', extra={
+            'subject': user.sub,
+            'agreement_id': agreement.id,
+        })
+
+        start_consume_back_in_time_pipeline(
+            user=agreement.user_from,
+            begin_from=datetime.fromordinal(agreement.date_from.toordinal()) - timedelta(days=2),
+            begin_to=datetime.fromordinal(agreement.date_to.toordinal()) + timedelta(days=2),
+        )
+
+        # Send e-mail to proposing user
+        send_invitation_accepted_email(agreement)
+
+    def decline_proposal(self, agreement, user):
+        """
+        :param TradeAgreement agreement:
+        :param User user:
+        """
+        agreement.decline_proposal()
+
+        logger.info(f'User declined to TradeAgreement proposal', extra={
+            'subject': user.sub,
+            'agreement_id': agreement.id,
+        })
+
+        # Send e-mail to proposing user
+        send_invitation_declined_email(agreement)
 
     def can_set_technology(self, agreement):
         """
