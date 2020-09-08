@@ -20,6 +20,7 @@ Name | Description | Example
 `ACCOUNT_SERVICE_URL` | Public URL to AccountService without trailing slash | `https://account.projectorigin.dk`
 `ACCOUNT_SERVICE_LOGIN_URL` | Public URL to AccountService login endpoint | `https://account.projectorigin.dk/auth/login`
 `IDENTITY_SERVICE_EDIT_PROFILE_URL` | Public URL to IdentityService edit profile endpoint | `https://identity.projectorigin.dk/edit-profile`
+`IDENTITY_SERVICE_EDIT_CLIENTS_URL` | Public URL to IdentityService edit OAuth2 clients endpoint | `https://identity.projectorigin.dk/clients`
 **Webhooks:** | |
 `WEBHOOK_SECRET` | The secret to post together with the webhooks. | `some-secret`
 **Authentication:** | |
@@ -41,6 +42,8 @@ Name | Description | Example
 `DATABASE_URI` | Database connection string for SQLAlchemy | `postgresql://scott:tiger@localhost/mydatabase`
 `DATABASE_CONN_POLL_SIZE` | Connection pool size per container | `10`
 **E-mail:** | |
+`EMAIL_FROM_NAME` | From-name in outgoing e-mails | `John Doe`
+`EMAIL_FROM_ADDRESS` | From-address in outgoing e-mails | `john@doe.com`
 `EMAIL_TO_ADDRESS` | SendGrid API key | `support@energinet.dk`
 `EMAIL_PREFIX` | SendGrid API key | `eloverblik - `
 `SENDGRID_API_KEY` | SendGrid API key | `foobar`
@@ -50,15 +53,35 @@ Name | Description | Example
 `CONCURRENCY` | Number of gevent greenthreads to execute asynchronous tasks | `100`
 
 
-# Building container image
+## Building container image
+
+    docker build -f Dockerfile -t example-backend:v1 .
+
+## Running container images
 
 Web API:
 
-    sudo docker build -f Dockerfile -t example-backend:v1 .
+    docker run --entrypoint /app/entrypoint.web.sh example-backend:v1
 
----
----
----
+Worker:
+
+    docker run --entrypoint /app/entrypoint.worker.sh example-backend:v1
+
+Worker Beat:
+
+    docker run --entrypoint /app/entrypoint.beat.sh example-backend:v1
+
+# System architecture
+
+The following diagram depicts the overall architecture of AccountService and its dependencies. A few key points are listed below the diagram.
+
+![alt text](doc/ExampleBackend.png)
+
+- It exposes a web API using Bearer token authentication.
+- It uses AccountService and DataHubService to fetch necessary data, from within both the Web API and Worker processes.
+- It has one asynchronous worker running its own process (container).
+- The web API process starts asynchronous tasks by submitting them to a distributed queue using Redis.
+- A Beat process kicks off periodic tasks.
 
 
 # Installing and running the project

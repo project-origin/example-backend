@@ -14,6 +14,9 @@ class SubmitSupportEnquiryRequest:
     # Whether or not to send a recipe (email) to the user
     recipe: bool
 
+    # Reference link/URL
+    link: str = None
+
     # File upload
     file_name: str = field(default=None, metadata=dict(data_key='fileName'))
     file_source: str = field(default=None, metadata=dict(data_key='fileSource'))

@@ -124,7 +124,7 @@ def seeded_session(session):
             date_to=date_to,
             amount=100,
             unit=Unit.Wh,
-            technology=tech,
+            technologies=[tech] if tech else None,
             reference='some-reference',
         ))
 
@@ -317,7 +317,7 @@ def test__AgreementQuery__is_elibigle_to_trade__TradeAgreement_exists__returns_c
         seeded_session, ggo_technology, ggo_begin):
 
     # Arrange
-    ggo = Mock(begin=ggo_begin, technology=ggo_technology)
+    ggo = Mock(begin=ggo_begin, technology=ggo_technology, issue_gsrn=None)
 
     # Act
     query = AgreementQuery(seeded_session) \
@@ -326,7 +326,7 @@ def test__AgreementQuery__is_elibigle_to_trade__TradeAgreement_exists__returns_c
     # Assert
     assert query.count() > 0
     assert all(ag.date_from <= ggo_begin.astimezone(pytz.timezone('Europe/Copenhagen')).date() <= ag.date_to for ag in query.all())
-    assert all(ag.technology in (None, ggo_technology) for ag in query.all())
+    assert all(ag.technologies in (None, []) or ggo_technology in ag.technologies for ag in query.all())
 
 
 @pytest.mark.parametrize('ggo_begin', (
@@ -341,7 +341,7 @@ def test__AgreementQuery__is_elibigle_to_trade__technology_does_not_exists__retu
         seeded_session, ggo_begin):
 
     # Arrange
-    ggo = Mock(begin=ggo_begin, technology='nonexisting-technology')
+    ggo = Mock(begin=ggo_begin, technology='nonexisting-technology', issue_gsrn=None)
 
     # Act
     query = AgreementQuery(seeded_session) \
@@ -349,7 +349,7 @@ def test__AgreementQuery__is_elibigle_to_trade__technology_does_not_exists__retu
 
     # Assert
     assert query.count() > 0
-    assert all(ag.technology is None for ag in query.all())
+    assert all(ag.technologies in (None, []) for ag in query.all())
 
 
 @pytest.mark.parametrize('ggo_begin', (
@@ -360,7 +360,7 @@ def test__AgreementQuery__is_elibigle_to_trade__ggo_date_is_outside_agreements__
         seeded_session, ggo_begin):
 
     # Arrange
-    ggo = Mock(begin=ggo_begin, technology='Wind')
+    ggo = Mock(begin=ggo_begin, technology='Wind', issue_gsrn=None)
 
     # Act
     query = AgreementQuery(seeded_session) \

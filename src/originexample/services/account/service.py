@@ -12,18 +12,29 @@ from originexample.settings import (
 )
 
 from .models import (
+    FindSuppliersRequest,
+    FindSuppliersResponse,
     GetGgoListRequest,
     GetGgoListResponse,
     GetGgoSummaryRequest,
     GetGgoSummaryResponse,
-    GetTotalAmountRequest,
-    GetTotalAmountResponse,
     ComposeGgoRequest,
     ComposeGgoResponse,
     GetTransferSummaryRequest,
     GetTransferSummaryResponse,
     GetTransferredAmountRequest,
     GetTransferredAmountResponse,
+    GetTotalAmountRequest,
+    GetTotalAmountResponse,
+    GetEcoDeclarationRequest,
+    GetEcoDeclarationResponse,
+    GetForecastRequest,
+    GetForecastResponse,
+    GetForecastListRequest,
+    GetForecastListResponse,
+    GetForecastSeriesResponse,
+    SubmitForecastRequest,
+    SubmitForecastResponse,
     WebhookSubscribeRequest,
     WebhookSubscribeResponse,
 )
@@ -50,7 +61,7 @@ class AccountService(object):
     """
     An interface to the Project Origin Account Service API.
     """
-    def invoke(self, token, path, request, request_schema, response_schema):
+    def invoke(self, token, path, response_schema, request=None, request_schema=None):
         """
         :param str token:
         :param str path:
@@ -61,7 +72,10 @@ class AccountService(object):
         """
         url = '%s%s' % (ACCOUNT_SERVICE_URL, path)
         headers = {TOKEN_HEADER: f'Bearer {token}'}
-        body = request_schema().dump(request)
+        body = None
+
+        if request and request_schema:
+            body = request_schema().dump(request)
 
         try:
             response = requests.post(
@@ -93,14 +107,32 @@ class AccountService(object):
                 status_code=response.status_code,
                 response_body=str(response.content),
             )
-        except marshmallow.ValidationError:
+        except marshmallow.ValidationError as e:
             raise AccountServiceError(
-                f'Failed to validate response JSON: {url}\n\n{response.content}',
+                f'Failed to validate response JSON: {url}\n\n{response.content}\n\n{str(e)}',
                 status_code=response.status_code,
                 response_body=str(response.content),
             )
 
         return response_model
+
+    # -- Users and accounts --------------------------------------------------
+
+    def find_suppliers(self, token, request):
+        """
+        :param str token:
+        :param FindSuppliersRequest request:
+        :rtype: FindSuppliersResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/accounts/find-suppliers',
+            request=request,
+            request_schema=md.class_schema(FindSuppliersRequest),
+            response_schema=md.class_schema(FindSuppliersResponse),
+        )
+
+    # -- GGOs ----------------------------------------------------------------
 
     def get_ggo_list(self, token, request):
         """
@@ -186,17 +218,124 @@ class AccountService(object):
             response_schema=md.class_schema(GetTotalAmountResponse),
         )
 
+    def get_eco_declaration(self, token, request):
+        """
+        :param str token:
+        :param GetEcoDeclarationRequest request:
+        :rtype: GetEcoDeclarationResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/eco-declaration',
+            request=request,
+            request_schema=md.class_schema(GetEcoDeclarationRequest),
+            response_schema=md.class_schema(GetEcoDeclarationResponse),
+        )
+
+    def export_eco_declaration_pdf(self, token, request):
+        """
+        :param str token:
+        :param GetEcoDeclarationRequest request:
+        :returns: File-like object
+        """
+        path = '/eco-declaration/export-pdf'
+        request_schema = md.class_schema(GetEcoDeclarationRequest)
+
+        url = '%s%s' % (ACCOUNT_SERVICE_URL, path)
+        headers = {TOKEN_HEADER: f'Bearer {token}'}
+        body = request_schema().dump(request)
+
+        try:
+            response = requests.post(
+                url=url,
+                json=body,
+                headers=headers,
+                verify=not DEBUG,
+            )
+        except:
+            raise AccountServiceConnectionError(
+                'Failed to POST request to AccountService')
+
+        if response.status_code != 200:
+            raise AccountServiceError(
+                (
+                    f'Invoking AccountService resulted in status code {response.status_code}: '
+                    f'{url}\n\n{response.content}'
+                ),
+                status_code=response.status_code,
+                response_body=str(response.content),
+            )
+
+        return response.content
+
+    # -- Forecasts -----------------------------------------------------------
+
+    def get_forecast(self, token, request):
+        """
+        :param str token:
+        :param GetForecastRequest request:
+        :rtype: GetForecastResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/forecast',
+            request=request,
+            request_schema=md.class_schema(GetForecastRequest),
+            response_schema=md.class_schema(GetForecastResponse),
+        )
+
+    def get_forecast_list(self, token, request):
+        """
+        :param str token:
+        :param GetForecastListRequest request:
+        :rtype: GetForecastListResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/forecast/list',
+            request=request,
+            request_schema=md.class_schema(GetForecastListRequest),
+            response_schema=md.class_schema(GetForecastListResponse),
+        )
+
+    def get_forecast_series(self, token):
+        """
+        :param str token:
+        :rtype: GetForecastSeriesResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/forecast/series',
+            response_schema=md.class_schema(GetForecastSeriesResponse),
+        )
+
+    def submit_forecast(self, token, request):
+        """
+        :param str token:
+        :param SubmitForecastRequest request:
+        :rtype: SubmitForecastResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/forecast/submit',
+            request=request,
+            request_schema=md.class_schema(SubmitForecastRequest),
+            response_schema=md.class_schema(SubmitForecastResponse),
+        )
+
+    # -- Webhooks ------------------------------------------------------------
+
     def webhook_on_ggo_received_subscribe(self, token):
         """
         :param str token:
         :rtype: WebhookSubscribeResponse
         """
-        url = f'{PROJECT_URL}/webhook/on-ggo-received'
+        callback_url = f'{PROJECT_URL}/webhook/on-ggo-received'
 
         return self.invoke(
             token=token,
             path='/webhook/on-ggo-received/subscribe',
-            request=WebhookSubscribeRequest(url=url, secret=WEBHOOK_SECRET),
+            request=WebhookSubscribeRequest(url=callback_url, secret=WEBHOOK_SECRET),
             request_schema=md.class_schema(WebhookSubscribeRequest),
             response_schema=md.class_schema(WebhookSubscribeResponse),
         )

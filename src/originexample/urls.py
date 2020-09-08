@@ -1,9 +1,11 @@
 from .auth import controllers as auth
+from .eco import controllers as eco
 from .commodities import controllers as commodities
 from .facilities import controllers as facilities
 from .agreements import controllers as agreements
 from .disclosures import controllers as disclosures
 from .support import controllers as support
+from .forecast import controllers as forecast
 from .webhooks import controllers as webhooks
 
 
@@ -12,6 +14,7 @@ urls = (
     # Auth / Users
     ('/auth/login', auth.Login()),
     ('/auth/login/callback', auth.LoginCallback()),
+    ('/auth/edit-clients', auth.EditClients()),
     ('/auth/edit-profile', auth.EditProfile()),
     ('/auth/edit-profile/callback', auth.EditProfileCallback()),
     ('/auth/logout', auth.Logout()),
@@ -32,6 +35,9 @@ urls = (
     ('/agreements/details', agreements.GetAgreementDetails()),
     ('/agreements/summary', agreements.GetAgreementSummary()),
     ('/agreements/cancel', agreements.CancelAgreement()),
+    ('/agreements/set-transfer-priority', agreements.SetTransferPriority()),
+    ('/agreements/set-facilities', agreements.SetFacilities()),
+    ('/agreements/find-suppliers', agreements.FindSuppliers()),
     ('/agreements/propose', agreements.SubmitAgreementProposal()),
     ('/agreements/propose/respond', agreements.RespondToProposal()),
     ('/agreements/propose/withdraw', agreements.WithdrawProposal()),
@@ -45,6 +51,13 @@ urls = (
     ('/commodities/measurements/csv', commodities.ExportMeasurementsCSV()),
     ('/commodities/ggo-summary/csv', commodities.ExportGgoSummaryCSV()),
     ('/commodities/ggo-list/csv', commodities.ExportGgoListCSV()),
+    ('/commodities/get-peak-measurement', commodities.GetPeakMeasurement()),
+
+    # Eco Declaration
+    ('/eco-declaration', eco.GetEcoDeclaration()),
+    ('/eco-declaration/pdf', eco.ExportEcoDeclarationPDF()),
+    ('/eco-declaration/csv/emissions', eco.ExportEcoDeclarationEmissionsCSV()),
+    ('/eco-declaration/csv/technologies', eco.ExportEcoDeclarationTechnologiesCSV()),
 
     # Disclosure
     ('/disclosure', disclosures.GetDisclosure()),
@@ -52,6 +65,12 @@ urls = (
     ('/disclosure/preview', disclosures.GetDisclosurePreview()),
     ('/disclosure/create', disclosures.CreateDisclosure()),
     ('/disclosure/delete', disclosures.DeleteDisclosure()),
+
+    # Forecasts
+    ('/forecast', forecast.GetForecast()),
+    ('/forecast/list', forecast.GetForecastList()),
+    ('/forecast/series', forecast.GetForecastSeries()),
+    ('/forecast/submit', forecast.SubmitForecast()),
 
     # Webhooks
     ('/webhook/on-ggo-received', webhooks.OnGgoReceivedWebhook()),

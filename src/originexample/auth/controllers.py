@@ -15,6 +15,7 @@ from originexample.settings import (
     FRONTEND_URL,
     ACCOUNT_SERVICE_LOGIN_URL,
     IDENTITY_SERVICE_EDIT_PROFILE_URL,
+    IDENTITY_SERVICE_EDIT_CLIENTS_URL,
 )
 
 from .queries import UserQuery
@@ -187,6 +188,20 @@ class LoginCallback(Controller):
         :rtype: flask.Response
         """
         return redirect(f'{return_url}?success=0', code=303)
+
+
+class EditClients(Controller):
+    """
+    Redirects the user to IdentityService edit clients URL
+    """
+    METHOD = 'GET'
+
+    def handle_request(self):
+        """
+        :rtype: flask.Response
+        """
+        url = f'{IDENTITY_SERVICE_EDIT_CLIENTS_URL}?return_url={FRONTEND_URL}'
+        return redirect(url, code=303)
 
 
 class EditProfile(Controller):

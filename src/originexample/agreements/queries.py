@@ -1,6 +1,6 @@
 import pytz
 import sqlalchemy as sa
-from sqlalchemy import text
+from sqlalchemy import text, func
 
 from originexample.auth import User
 from originexample.services.account import Ggo
@@ -209,11 +209,42 @@ class AgreementQuery(object):
         """
         b = ggo.begin.astimezone(pytz.timezone('Europe/Copenhagen')).date()
 
-        return AgreementQuery(self.session, self.q.filter(
+        filters = [
             TradeAgreement.date_from <= b,
             TradeAgreement.date_to >= b,
             sa.or_(
-                TradeAgreement.technology.is_(None),
-                TradeAgreement.technology == ggo.technology,
+                TradeAgreement.technologies.is_(None),
+                TradeAgreement.technologies.any(ggo.technology),
             ),
-        ))
+            sa.or_(
+                TradeAgreement.facility_gsrn.is_(None),
+                TradeAgreement.facility_gsrn == [],
+                TradeAgreement.facility_gsrn.any(ggo.issue_gsrn),
+            ),
+        ]
+
+        if ggo.issue_gsrn:
+            filters.append(sa.or_(
+                TradeAgreement.facility_gsrn.is_(None),
+                TradeAgreement.facility_gsrn == [],
+                TradeAgreement.facility_gsrn.any(ggo.issue_gsrn),
+            ))
+        else:
+            filters.append(sa.or_(
+                TradeAgreement.facility_gsrn.is_(None),
+                TradeAgreement.facility_gsrn == [],
+            ))
+
+        return AgreementQuery(self.session, self.q.filter(*filters))
+
+    def get_peiority_max(self):
+        """
+        Returns the highest transfer_priority within the result set, or None.
+
+        TODO unittest this
+
+        :rtype: int | None
+        """
+        return self.session.query(
+            func.max(self.q.subquery().c.transfer_priority)
+        ).scalar()
