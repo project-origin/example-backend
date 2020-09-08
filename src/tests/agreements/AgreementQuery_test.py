@@ -317,7 +317,7 @@ def test__AgreementQuery__is_elibigle_to_trade__TradeAgreement_exists__returns_c
         seeded_session, ggo_technology, ggo_begin):
 
     # Arrange
-    ggo = Mock(begin=ggo_begin, technology=ggo_technology)
+    ggo = Mock(begin=ggo_begin, technology=ggo_technology, issue_gsrn=None)
 
     # Act
     query = AgreementQuery(seeded_session) \
@@ -341,7 +341,7 @@ def test__AgreementQuery__is_elibigle_to_trade__technology_does_not_exists__retu
         seeded_session, ggo_begin):
 
     # Arrange
-    ggo = Mock(begin=ggo_begin, technology='nonexisting-technology')
+    ggo = Mock(begin=ggo_begin, technology='nonexisting-technology', issue_gsrn=None)
 
     # Act
     query = AgreementQuery(seeded_session) \
@@ -360,7 +360,7 @@ def test__AgreementQuery__is_elibigle_to_trade__ggo_date_is_outside_agreements__
         seeded_session, ggo_begin):
 
     # Arrange
-    ggo = Mock(begin=ggo_begin, technology='Wind')
+    ggo = Mock(begin=ggo_begin, technology='Wind', issue_gsrn=None)
 
     # Act
     query = AgreementQuery(seeded_session) \

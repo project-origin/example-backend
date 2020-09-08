@@ -20,6 +20,7 @@ Name | Description | Example
 `ACCOUNT_SERVICE_URL` | Public URL to AccountService without trailing slash | `https://account.projectorigin.dk`
 `ACCOUNT_SERVICE_LOGIN_URL` | Public URL to AccountService login endpoint | `https://account.projectorigin.dk/auth/login`
 `IDENTITY_SERVICE_EDIT_PROFILE_URL` | Public URL to IdentityService edit profile endpoint | `https://identity.projectorigin.dk/edit-profile`
+`IDENTITY_SERVICE_EDIT_CLIENTS_URL` | Public URL to IdentityService edit OAuth2 clients endpoint | `https://identity.projectorigin.dk/clients`
 **Webhooks:** | |
 `WEBHOOK_SECRET` | The secret to post together with the webhooks. | `some-secret`
 **Authentication:** | |
@@ -41,6 +42,8 @@ Name | Description | Example
 `DATABASE_URI` | Database connection string for SQLAlchemy | `postgresql://scott:tiger@localhost/mydatabase`
 `DATABASE_CONN_POLL_SIZE` | Connection pool size per container | `10`
 **E-mail:** | |
+`EMAIL_FROM_NAME` | From-name in outgoing e-mails | `John Doe`
+`EMAIL_FROM_ADDRESS` | From-address in outgoing e-mails | `john@doe.com`
 `EMAIL_TO_ADDRESS` | SendGrid API key | `support@energinet.dk`
 `EMAIL_PREFIX` | SendGrid API key | `eloverblik - `
 `SENDGRID_API_KEY` | SendGrid API key | `foobar`
