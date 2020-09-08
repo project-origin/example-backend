@@ -61,7 +61,7 @@ class TradeAgreement(ModelBase):
     user_to = relationship('User', foreign_keys=[user_to_id], lazy='joined')
 
     # Outbound facilities
-    facility_ids = sa.Column(ARRAY(sa.Integer()))
+    facility_gsrn = sa.Column(ARRAY(sa.Integer()))
 
     # Agreement details
     state = sa.Column(sa.Enum(AgreementState), index=True, nullable=False)
@@ -287,7 +287,7 @@ class SubmitAgreementProposalRequest:
     limit_to_consumption: bool = field(metadata=dict(data_key='limitToConsumption'))
     proposal_note: str = field(metadata=dict(data_key='proposalNote', allow_none=True))
     technologies: List[str] = field(default_factory=None)
-    facility_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds'))
+    facility_gsrn: List[str] = field(default_factory=list, metadata=dict(data_key='facilityGsrn'))
 
     class Meta:
         unknown = EXCLUDE
@@ -306,7 +306,7 @@ class RespondToProposalRequest:
     public_id: str = field(metadata=dict(data_key='id'))
     accept: bool
     technologies: List[str] = field(default_factory=None)
-    facility_ids: List[str] = field(default_factory=list, metadata=dict(data_key='facilityIds'))
+    facility_gsrn: List[str] = field(default_factory=list, metadata=dict(data_key='facilityGsrn'))
     amount_percent: int = field(default_factory=list, metadata=dict(allow_none=True, data_key='amountPercent'))
 
 

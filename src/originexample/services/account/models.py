@@ -26,6 +26,7 @@ class Ggo:
     technology_code: str = field(metadata=dict(data_key='technologyCode'))
     fuel_code: str = field(metadata=dict(data_key='fuelCode'))
     emissions: Dict[str, float] = field(default=None, metadata=dict(required=False, missing=None))
+    issue_gsrn: str = field(default=None, metadata=dict(data_key='issueGsrn'))
 
 
 class GgoCategory(Enum):

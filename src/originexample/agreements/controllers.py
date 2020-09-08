@@ -149,22 +149,22 @@ class AbstractAgreementController(Controller):
             reference=agreement.reference,
             limit_to_consumption=agreement.limit_to_consumption,
             proposal_note=agreement.proposal_note,
-            facilities=[],
-            # facilities=self.get_facilities(
-            #     agreement.user_from, agreement.facility_ids),
+            facilities=self.get_facilities(
+                agreement.user_from, agreement.facility_gsrn),
         )
 
-    # @inject_session
-    # def get_facilities(self, user, facility_ids, session):
-    #     """
-    #     :param User user:
-    #     :param list[int] facility_ids:
-    #     :param Session session:
-    #     """
-    #     query = FacilityQuery(session) \
-    #         .belongs_to(user) \
-    #         .has_any_id(facility_ids) \
-    #         .all()
+    @inject_session
+    def get_facilities(self, user, facility_gsrn, session):
+        """
+        :param User user:
+        :param list[str] facility_gsrn:
+        :param Session session:
+        :rtype: list[Facility]
+        """
+        return FacilityQuery(session) \
+            .belongs_to(user) \
+            .has_any_gsrn(facility_gsrn) \
+            .all()
 
 
 class GetAgreementList(AbstractAgreementController):
@@ -473,6 +473,8 @@ class SetFacilities(Controller):
         :param sqlalchemy.orm.Session session:
         :rtype: bool
         """
+        raise Exception('TODO')
+
         agreement = AgreementQuery(session) \
             .belongs_to(user) \
             .has_public_id(request.public_id) \
@@ -577,11 +579,9 @@ class SubmitAgreementProposal(Controller):
         if request.direction == AgreementDirection.INBOUND:
             user_from = counterpart
             user_to = user
-            facilities = []
         elif request.direction == AgreementDirection.OUTBOUND:
             user_from = user
             user_to = counterpart
-            facilities = self.get_facilities(user, request.facility_ids, session)
         else:
             raise RuntimeError('This should NOT have happened!')
 
@@ -590,7 +590,6 @@ class SubmitAgreementProposal(Controller):
             user=user,
             user_from=user_from,
             user_to=user_to,
-            facilities=facilities,
         )
 
         session.add(agreement)
@@ -607,13 +606,12 @@ class SubmitAgreementProposal(Controller):
 
         return SubmitAgreementProposalResponse(success=True)
 
-    def create_pending_agreement(self, request, user, user_from, user_to, facilities):
+    def create_pending_agreement(self, request, user, user_from, user_to):
         """
         :param SubmitAgreementProposalRequest request:
         :param User user:
         :param User user_from:
         :param User user_to:
-        :param collections.abc.Iterable[Facility] facilities:
         :rtype: TradeAgreement
         """
         agreement = TradeAgreement(
@@ -630,21 +628,10 @@ class SubmitAgreementProposal(Controller):
             technologies=request.technologies,
             limit_to_consumption=request.limit_to_consumption,
             proposal_note=request.proposal_note,
-            facility_ids=[f.id for f in facilities],
+            facility_gsrn=request.facility_gsrn,
         )
 
         return agreement
-
-    def get_facilities(self, user, facility_public_ids, session):
-        """
-        :param User user:
-        :param list[str] facility_public_ids:
-        :param Session session:
-        """
-        return FacilityQuery(session) \
-            .belongs_to(user) \
-            .has_any_public_id(facility_public_ids) \
-            .all()
 
 
 class RespondToProposal(Controller):
@@ -693,12 +680,8 @@ class RespondToProposal(Controller):
         if request.technologies and self.can_set_technology(agreement):
             agreement.technologies = request.technologies
 
-        if request.facility_ids and self.can_set_facilities(agreement, user):
-            agreement.facilities.extend(self.get_facilities(
-                user=user,
-                facility_public_ids=request.facility_ids,
-                session=session,
-            ))
+        if request.facility_gsrn and self.can_set_facilities(agreement, user):
+            agreement.facility_gsrn = request.facility_gsrn
 
         if request.amount_percent and self.can_set_amount_percent(agreement, user):
             agreement.amount_percent = request.amount_percent
