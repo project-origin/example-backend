@@ -209,14 +209,33 @@ class AgreementQuery(object):
         """
         b = ggo.begin.astimezone(pytz.timezone('Europe/Copenhagen')).date()
 
-        return AgreementQuery(self.session, self.q.filter(
+        filters = [
             TradeAgreement.date_from <= b,
             TradeAgreement.date_to >= b,
             sa.or_(
                 TradeAgreement.technologies.is_(None),
                 TradeAgreement.technologies.any(ggo.technology),
             ),
-        ))
+            sa.or_(
+                TradeAgreement.facility_gsrn.is_(None),
+                TradeAgreement.facility_gsrn == [],
+                TradeAgreement.facility_gsrn.any(ggo.issue_gsrn),
+            ),
+        ]
+
+        if ggo.issue_gsrn:
+            filters.append(sa.or_(
+                TradeAgreement.facility_gsrn.is_(None),
+                TradeAgreement.facility_gsrn == [],
+                TradeAgreement.facility_gsrn.any(ggo.issue_gsrn),
+            ))
+        else:
+            filters.append(sa.or_(
+                TradeAgreement.facility_gsrn.is_(None),
+                TradeAgreement.facility_gsrn == [],
+            ))
+
+        return AgreementQuery(self.session, self.q.filter(*filters))
 
     def get_peiority_max(self):
         """

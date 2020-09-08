@@ -14,6 +14,7 @@ urls = (
     # Auth / Users
     ('/auth/login', auth.Login()),
     ('/auth/login/callback', auth.LoginCallback()),
+    ('/auth/edit-clients', auth.EditClients()),
     ('/auth/edit-profile', auth.EditProfile()),
     ('/auth/edit-profile/callback', auth.EditProfileCallback()),
     ('/auth/logout', auth.Logout()),
