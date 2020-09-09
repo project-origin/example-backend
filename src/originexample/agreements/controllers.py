@@ -134,6 +134,12 @@ class AbstractAgreementController(Controller):
         :param TradeAgreement agreement:
         :rtype: MappedTradeAgreement
         """
+        if agreement.facility_gsrn:
+            facilities = self.get_facilities(
+                agreement.user_from, agreement.facility_gsrn)
+        else:
+            facilities = []
+
         return MappedTradeAgreement(
             direction=AgreementDirection.OUTBOUND,
             state=agreement.state,
@@ -149,8 +155,7 @@ class AbstractAgreementController(Controller):
             reference=agreement.reference,
             limit_to_consumption=agreement.limit_to_consumption,
             proposal_note=agreement.proposal_note,
-            facilities=self.get_facilities(
-                agreement.user_from, agreement.facility_gsrn),
+            facilities=facilities,
         )
 
     @inject_session
