@@ -113,11 +113,31 @@ class GgoConsumerController(object):
 
             account_service.compose(user.access_token, request)
 
+    def get_affected_subjects(self, user, ggo, session):
+        """
+        :param User user:
+        :param Ggo ggo:
+        :param Session session:
+        :rtype: list[str]
+        """
+        unique_subjects = set([user.sub])
+
+        for consumer in self.get_consumers(user, ggo, session):
+            unique_subjects.update(consumer.get_affected_subjects())
+
+        return list(unique_subjects)
+
 
 class GgoConsumer(object):
     """
     TODO
     """
+    def get_affected_subjects(self):
+        """
+        :rtype: list[str]
+        """
+        raise NotImplementedError
+
     def consume(self, request, ggo, amount):
         """
         :param ComposeGgoRequest request:
@@ -147,6 +167,12 @@ class RetiringConsumer(GgoConsumer):
 
     def __str__(self):
         return 'RetiringConsumer<%s>' % self.facility.gsrn
+
+    def get_affected_subjects(self):
+        """
+        :rtype: list[str]
+        """
+        return [self.facility.user.sub]
 
     def consume(self, request, ggo, amount):
         """
@@ -198,6 +224,12 @@ class AgreementConsumer(GgoConsumer):
 
     def __str__(self):
         return 'AgreementConsumer<%s>' % self.reference
+
+    def get_affected_subjects(self):
+        """
+        :rtype: list[str]
+        """
+        return [self.agreement.user_to.sub]
 
     def consume(self, request, ggo, amount):
         """
@@ -251,6 +283,15 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
     def __str__(self):
         return 'AgreementLimitedToConsumptionConsumer<%s>' % self.reference
 
+    def get_affected_subjects(self):
+        """
+        :rtype: list[str]
+        """
+        return [
+            self.agreement.user_from.sub,
+            self.agreement.user_to.sub,
+        ]
+
     def get_desired_amount(self, ggo, already_transferred):
         """
         :param Ggo ggo:
@@ -273,10 +314,14 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
             )
 
         desired_amount -= already_transferred
-        desired_amount -= get_stored_amount(
-            token=self.agreement.user_to.access_token,
-            begin=ggo.begin,
-        )
+        try:
+            desired_amount -= get_stored_amount(
+                token=self.agreement.user_to.access_token,
+                begin=ggo.begin,
+            )
+        except Exception as e:
+            logger.exception('ACCESS TOKEN ERROR?! sub=%s access_token=%s' % (self.agreement.user_to.sub, self.agreement.user_to.access_token))
+            raise
 
         return max(0, min(ggo.amount, remaining_amount, desired_amount))
 
@@ -286,11 +331,15 @@ class AgreementLimitedToConsumptionConsumer(AgreementConsumer):
         :param datetime.datetime begin:
         :rtype: int
         """
-        measurement = get_consumption(
-            token=facility.user.access_token,
-            gsrn=facility.gsrn,
-            begin=begin,
-        )
+        try:
+            measurement = get_consumption(
+                token=facility.user.access_token,
+                gsrn=facility.gsrn,
+                begin=begin,
+            )
+        except Exception as e:
+            logger.exception('ACCESS TOKEN ERROR?! sub=%s access_token=%s' % (self.agreement.user_to.sub, self.agreement.user_to.access_token))
+            raise
 
         if measurement is None:
             return 0

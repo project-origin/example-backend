@@ -22,7 +22,7 @@ from originexample.services.account import (
 # Settings
 RETRY_DELAY = 10
 MAX_RETRIES = (24 * 60 * 60) / RETRY_DELAY
-LOCK_TIMEOUT = 2 * 60
+LOCK_TIMEOUT = 60 * 2
 
 # Services / controllers
 controller = GgoConsumerController()
@@ -87,6 +87,10 @@ def handle_ggo_received(task, subject, address, ggo_json, session):
         logger.exception('Failed to load User from database, retrying...', extra=__log_extra)
         raise task.retry(exc=e)
 
+    # Affected subjects TODO
+    # affected_subjects = controller.get_affected_subjects(user, ggo, session)
+    # lock_keys = [get_lock_key(sub, ggo.begin) for sub in affected_subjects]
+
     lock_key = ggo.begin.strftime('%Y-%m-%d-%H-%M')
 
     # This lock is in place to avoid timing issues when executing multiple
@@ -94,15 +98,17 @@ def handle_ggo_received(task, subject, address, ggo_json, session):
     # the transferred or retired amount to exceed the allowed amount
     with lock(lock_key, timeout=LOCK_TIMEOUT) as acquired:
         if not acquired:
-            logger.debug('Could not acquire lock, retrying...', extra=__log_extra)
+            logger.info('Could not acquire lock(s), retrying...', extra=__log_extra)
             raise task.retry()
 
         try:
             if not ggo_is_available(user.access_token, ggo):
-                logger.info('GGO is unavailable, skipping', extra=__log_extra)
+                logger.info('GGO is unavailable, skipping...', extra=__log_extra)
                 return
 
+            # Consume GGO
             controller.consume_ggo(user, ggo, session)
+
         except AccountServiceError as e:
             if e.status_code == 400:
                 raise
@@ -112,3 +118,12 @@ def handle_ggo_received(task, subject, address, ggo_json, session):
         except Exception as e:
             logger.exception('Failed to consume GGO, retrying...', extra=__log_extra)
             raise task.retry(exc=e)
+
+
+# def get_lock_key(subject, begin):
+#     """
+#     :param str subject:
+#     :param datetime.datetime begin:
+#     :rtype: str
+#     """
+#     return '%s-%s' % (subject, begin.strftime('%Y-%m-%d-%H-%M'))
