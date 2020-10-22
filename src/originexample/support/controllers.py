@@ -3,7 +3,7 @@ import sendgrid
 import marshmallow_dataclass as md
 from sendgrid.helpers.mail import (
     Email, Content, Mail, To, Attachment, FileContent,
-    FileName, FileType, Disposition, Header
+    FileName, FileType, Disposition, Header, ReplyTo
 )
 
 from originexample.http import Controller, BadRequest
@@ -67,7 +67,7 @@ class SubmitSupportEnquiry(Controller):
         subject = f'{EMAIL_PREFIX}{request.subject_type} - {request.subject}'
         content = Content('text/plain', body)
         mail = Mail(from_email, to_email, subject, content)
-        mail.add_header(Header('Reply-To', request.email))
+        mail.reply_to = ReplyTo(request.email, user.name)
 
         # Recipe (CC) to sender)
         if request.recipe:
