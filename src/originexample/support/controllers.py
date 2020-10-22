@@ -3,13 +3,15 @@ import sendgrid
 import marshmallow_dataclass as md
 from sendgrid.helpers.mail import (
     Email, Content, Mail, To, Attachment, FileContent,
-    FileName, FileType, Disposition,
+    FileName, FileType, Disposition, Header
 )
 
 from originexample.http import Controller, BadRequest
 from originexample.auth import User, requires_login
 from originexample.settings import (
     EMAIL_TO_ADDRESS,
+    EMAIL_FROM_ADDRESS,
+    EMAIL_FROM_NAME,
     EMAIL_PREFIX,
     SENDGRID_API_KEY,
 )
@@ -28,6 +30,7 @@ SUPPORT_ENQUIRY_EMAIL_TEMPLATE = """Support enquiry sent from ElOverblik.dk:
 Sender: %(name)s <%(email)s>
 Company: %(company)s
 Phone: %(phone)s
+E-mail: %(email)s
 User ID: %(sub)s
 Link: %(link)s
 ------------------------------------------------------------------------------
@@ -59,11 +62,12 @@ class SubmitSupportEnquiry(Controller):
             'message': request.message,
         }
 
-        from_email = Email(request.email, user.name)
+        from_email = Email(EMAIL_FROM_ADDRESS, EMAIL_FROM_NAME)
         to_email = To(EMAIL_TO_ADDRESS)
         subject = f'{EMAIL_PREFIX}{request.subject_type} - {request.subject}'
         content = Content('text/plain', body)
         mail = Mail(from_email, to_email, subject, content)
+        mail.add_header(Header('Reply-To', request.email))
 
         # Recipe (CC) to sender)
         if request.recipe:
