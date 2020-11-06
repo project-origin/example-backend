@@ -12,6 +12,7 @@ def user_public_id_exists(public_id, session, *args, **kwargs):
     ie. no value are present more than once.
     """
     user = UserQuery(session) \
+        .is_active() \
         .has_public_id(public_id) \
         .one_or_none()
 

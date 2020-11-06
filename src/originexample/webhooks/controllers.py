@@ -39,6 +39,7 @@ class OnGgoReceivedWebhook(Controller):
         :rtype: bool
         """
         user = UserQuery(session) \
+            .is_active() \
             .has_sub(request.sub) \
             .one_or_none()
 
@@ -65,6 +66,7 @@ class OnMeasurementPublishedWebhook(Controller):
         """
         if request.measurement.type is MeasurementType.CONSUMPTION:
             user = UserQuery(session) \
+                .is_active() \
                 .has_sub(request.sub) \
                 .one_or_none()
 
@@ -90,6 +92,7 @@ class OnMeteringPointAvailableWebhook(Controller):
         :rtype: bool
         """
         user = UserQuery(session) \
+            .is_active() \
             .has_sub(request.sub) \
             .one_or_none()
 
@@ -189,6 +192,7 @@ class OnMeteringPointsAvailableWebhook(Controller):
         :rtype: bool
         """
         user = UserQuery(session) \
+            .is_active() \
             .has_sub(request.sub) \
             .one_or_none()
 

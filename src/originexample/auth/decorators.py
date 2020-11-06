@@ -9,6 +9,10 @@ from .models import User
 from .queries import UserQuery
 
 
+def get_token():
+    return request.headers.get(TOKEN_HEADER)
+
+
 def inject_token(func):
     """
     Function decorator which injects a "token" named parameter
@@ -30,7 +34,7 @@ def inject_user(func):
     Consumes the "token" parameter provided by previous @inject_token.
     """
     def inject_user_wrapper(*args, **kwargs):
-        kwargs['user'] = _get_user()
+        kwargs['user'] = get_user(get_token())
         return func(*args, **kwargs)
     return inject_user_wrapper
 
@@ -48,9 +52,8 @@ def requires_login(func):
     return requires_login_wrapper
 
 
-@inject_token
 @inject_session
-def _get_user(token, session):
+def get_user(token, session):
     """
     :param str token:
     :param Session session:
@@ -61,5 +64,6 @@ def _get_user(token, session):
 
         if sub:
             return UserQuery(session) \
+                .is_active() \
                 .has_sub(sub.decode()) \
                 .one_or_none()

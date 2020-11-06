@@ -165,6 +165,14 @@ class Forecast:
         return [begin + self.resolution for begin in self.get_begins()]
 
 
+# -- DisableUser request and response ----------------------------------------
+
+
+@dataclass
+class DisableUserResponse:
+    success: bool
+
+
 # -- FindSuppliers request and response --------------------------------------
 
 

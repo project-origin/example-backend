@@ -79,6 +79,7 @@ def handle_ggo_received(task, subject, address, ggo_json, session):
     # Get User from database
     try:
         user = UserQuery(session) \
+            .is_active() \
             .has_sub(subject) \
             .one()
     except orm.exc.NoResultFound:

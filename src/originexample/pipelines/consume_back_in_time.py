@@ -65,6 +65,7 @@ def consume_back_in_time(subject, begin_from, begin_to, session):
     :param Session session:
     """
     user = UserQuery(session) \
+        .is_active() \
         .has_sub(subject) \
         .one()
 
