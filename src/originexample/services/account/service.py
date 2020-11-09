@@ -37,6 +37,7 @@ from .models import (
     SubmitForecastResponse,
     WebhookSubscribeRequest,
     WebhookSubscribeResponse,
+    DisableUserResponse,
 )
 
 
@@ -117,6 +118,17 @@ class AccountService(object):
         return response_model
 
     # -- Users and accounts --------------------------------------------------
+
+    def disable_user(self, token):
+        """
+        :param str token:
+        :rtype: DisableUserResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/auth/disable-user',
+            response_schema=md.class_schema(DisableUserResponse),
+        )
 
     def find_suppliers(self, token, request):
         """
