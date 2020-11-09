@@ -70,6 +70,7 @@ def import_meteringpoints_and_insert_to_db(task, subject, session):
     # Get User from DB
     try:
         user = UserQuery(session) \
+            .is_active() \
             .has_sub(subject) \
             .one()
     except orm.exc.NoResultFound:

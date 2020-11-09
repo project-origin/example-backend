@@ -17,6 +17,8 @@ urls = (
     ('/auth/edit-clients', auth.EditClients()),
     ('/auth/edit-profile', auth.EditProfile()),
     ('/auth/edit-profile/callback', auth.EditProfileCallback()),
+    ('/auth/disable-user', auth.DisableUser()),
+    ('/auth/disable-user/callback', auth.DisableUserCallback()),
     ('/auth/logout', auth.Logout()),
     ('/auth/error', auth.Error()),
     ('/auth/get-onboarding-url', auth.GetOnboardingUrl()),

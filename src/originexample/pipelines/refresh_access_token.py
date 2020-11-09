@@ -59,6 +59,7 @@ def get_soon_to_expire_tokens(session):
     :param Session session:
     """
     users = UserQuery(session) \
+        .is_active() \
         .should_refresh_token()
 
     tasks = [refresh_token.si(subject=user.sub) for user in users]
@@ -83,6 +84,7 @@ def refresh_token(subject, session):
     :param Session session:
     """
     user = UserQuery(session) \
+        .is_active() \
         .has_sub(subject) \
         .one()
 
