@@ -19,6 +19,7 @@ class User(ModelBase):
     id = sa.Column(sa.Integer, primary_key=True, index=True)
     created = sa.Column(sa.DateTime(timezone=True), server_default=sa.func.now())
     last_login = sa.Column(sa.DateTime(timezone=True))
+    disabled = sa.Column(sa.Boolean(), nullable=False, default=False)
 
     # Name / Company name
     name = sa.Column(sa.String(), nullable=False)
@@ -113,6 +114,14 @@ class VerifyLoginCallbackRequest:
     error: str = field(default=None)
     error_hint: str = field(default=None)
     error_description: str = field(default=None)
+
+
+# -- DisableUserCallback request and response --------------------------------
+
+
+@dataclass
+class DisableUserCallbackRequest:
+    disable: bool = field(default=False)
 
 
 # -- GetProfile request and response -----------------------------------------

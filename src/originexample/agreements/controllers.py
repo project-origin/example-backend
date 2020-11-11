@@ -14,6 +14,7 @@ from originexample.common import DateTimeRange, DataSet
 from originexample.pipelines import start_consume_back_in_time_pipeline
 import originexample.services.account as acc
 
+from .helpers import get_resolution, update_transfer_priorities
 from .queries import AgreementQuery
 from .email import (
     send_invitation_received_email,
@@ -44,50 +45,6 @@ from .models import (
 
 
 account = acc.AccountService()
-
-
-# -- Helpers -----------------------------------------------------------------
-
-
-def get_resolution(delta):
-    """
-    TODO write me
-
-    :param timedelta delta:
-    :rtype: SummaryResolution
-    """
-    if delta.days >= (365 * 3):
-        return acc.SummaryResolution.YEAR
-    elif delta.days >= 60:
-        return acc.SummaryResolution.MONTH
-    elif delta.days >= 3:
-        return acc.SummaryResolution.DAY
-    else:
-        return acc.SummaryResolution.HOUR
-
-
-def update_transfer_priorities(user, session):
-    """
-    TODO write me
-
-    :param User user:
-    :param sqlalchemy.orm.Session session:
-    """
-    session.execute("""
-        update agreements_agreement
-        set transfer_priority = s.row_number - 1
-        from (
-            select a.id, row_number() over (
-                partition by a.user_from_id
-                order by a.transfer_priority asc
-            )
-          from agreements_agreement as a
-          where a.state = 'ACCEPTED'
-          order by a.transfer_priority asc
-        ) as s
-        where agreements_agreement.id = s.id
-        and agreements_agreement.user_from_id = :user_from_id
-    """, {'user_from_id': user.id})
 
 
 # -- Controllers -------------------------------------------------------------
@@ -550,6 +507,7 @@ class FindSuppliers(Controller):
         :rtype: User
         """
         return UserQuery(session) \
+            .is_active() \
             .has_sub(subject) \
             .one_or_none()
 
@@ -574,6 +532,7 @@ class SubmitAgreementProposal(Controller):
         :rtype: SubmitAgreementProposalResponse
         """
         counterpart = UserQuery(session) \
+            .is_active() \
             .has_public_id(request.counterpart_id) \
             .exclude(user) \
             .one_or_none()

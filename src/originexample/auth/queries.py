@@ -35,6 +35,14 @@ class UserQuery(object):
             User.sub != user.sub,
         ))
 
+    def is_active(self):
+        """
+        :rtype: UserQuery
+        """
+        return UserQuery(self.session, self.q.filter(
+            User.disabled.is_(False),
+        ))
+
     def has_id(self, id):
         """
         :param int id:

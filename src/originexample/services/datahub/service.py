@@ -34,7 +34,7 @@ from .models import (
     DeleteDisclosureResponse,
     GetTechnologiesResponse,
     GetMeasurementListRequest,
-    GetMeasurementListResponse,
+    GetMeasurementListResponse, DisableMeteringpointsResponse,
 )
 
 
@@ -115,6 +115,17 @@ class DataHubService(object):
             )
 
         return response_model
+
+    def disable_meteringpoints(self, token):
+        """
+        :param str token:
+        :rtype: DisableMeteringpointsResponse
+        """
+        return self.invoke(
+            token=token,
+            path='/meteringpoints/disable',
+            response_schema=md.class_schema(DisableMeteringpointsResponse),
+        )
 
     def get_onboarding_url(self, token, return_url):
         """

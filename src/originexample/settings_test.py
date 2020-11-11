@@ -28,6 +28,7 @@ ACCOUNT_SERVICE_URL = None
 ACCOUNT_SERVICE_LOGIN_URL = None
 IDENTITY_SERVICE_EDIT_PROFILE_URL = None
 IDENTITY_SERVICE_EDIT_CLIENTS_URL = None
+IDENTITY_SERVICE_DISABLE_USER_URL = None
 
 
 # -- webhook -----------------------------------------------------------------
