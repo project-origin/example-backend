@@ -75,6 +75,14 @@ class Disclosure:
     publicize_physical_address: bool = field(metadata=dict(data_key='publicizePhysicalAddress'))
 
 
+# -- DisableUser request and response ----------------------------------------
+
+
+@dataclass
+class DisableMeteringpointsResponse:
+    success: bool
+
+
 # -- GetMeasurement request and response -------------------------------------
 
 

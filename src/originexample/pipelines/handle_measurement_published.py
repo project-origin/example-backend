@@ -80,6 +80,7 @@ def handle_measurement_published(task, subject, measurement_json, session):
     # Get User from database
     try:
         user = UserQuery(session) \
+            .is_active() \
             .has_sub(subject) \
             .one()
     except orm.exc.NoResultFound:
@@ -151,6 +152,7 @@ def trigger_handle_ggo_received_pipeline(task, subject, begin, session):
     # Get User from database
     try:
         user = UserQuery(session) \
+            .is_active() \
             .has_sub(subject) \
             .one()
     except orm.exc.NoResultFound:
