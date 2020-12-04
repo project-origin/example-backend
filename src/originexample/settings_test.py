@@ -12,6 +12,7 @@ SECRET = None
 PROJECT_URL = None
 LOGIN_CALLBACK_URL = None
 CORS_ORIGINS = None
+LOG_LEVEL = None
 
 
 # -- Database ----------------------------------------------------------------
