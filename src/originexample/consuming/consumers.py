@@ -273,13 +273,19 @@ class AgreementConsumer(GgoConsumer):
 
         if self.agreement.amount_percent:
             # Transfer percentage of ggo.amount
+            print('case 1')
             percentage_amount = self.agreement.amount_percent / 100 * ggo.amount
+            print('percentage_amount: %s' % percentage_amount)
             desired_amount = min(self.agreement.calculated_amount,
                                  floor(percentage_amount))
+            print('desired_amount (1): %s' % desired_amount)
             desired_amount = desired_amount - transferred_amount
+            print('desired_amount (2): %s' % desired_amount)
         else:
             # Transfer all of ggo.amount
             desired_amount = self.agreement.calculated_amount - transferred_amount
+            print('case 2')
+            print('desired_amount: %s' % desired_amount)
 
         return max(0, min(ggo.amount, desired_amount))
 
