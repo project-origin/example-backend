@@ -12,7 +12,7 @@ spec:
       labels:
         app: example-backend-deployment
     spec:
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: 300
       containers:
         - name: example-backend-container
           image: projectorigin/example-backend:{{ .Values.tag }}
