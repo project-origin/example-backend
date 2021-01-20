@@ -286,8 +286,10 @@ class AgreementConsumer(GgoConsumer):
             desired_amount = self.agreement.calculated_amount - transferred_amount
             print('case 2')
             print('desired_amount: %s' % desired_amount)
-        
-        print('max(0, min(ggo.amount, desired_amount)): %s' % max(0, min(ggo.amount, desired_amount)))
+
+        print('X desired_amount: %s' % desired_amount)
+        print('X ggo.amount: %s' % ggo.amount)
+        print('X max(0, min(ggo.amount, desired_amount)): %s' % max(0, min(ggo.amount, desired_amount)))
 
         return max(0, min(ggo.amount, desired_amount))
 
