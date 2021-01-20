@@ -92,6 +92,10 @@ class GgoConsumerController(object):
         consumers = self.get_consumers(user, ggo, session)
         remaining_amount = ggo.amount
 
+        logger.info('consume_ggo', extra={
+            'remaining_amount': remaining_amount,
+        })
+
         for consumer in takewhile(lambda _: remaining_amount > 0, consumers):
             already_transferred = ggo.amount - remaining_amount
 
@@ -100,6 +104,14 @@ class GgoConsumerController(object):
 
             assigned_amount = min(remaining_amount, desired_amount)
             remaining_amount -= assigned_amount
+
+            logger.info('GGO Consumer details', extra={
+                'remaining_amount': remaining_amount,
+                'already_transferred': already_transferred,
+                'desired_amount': desired_amount,
+                'assigned_amount': assigned_amount,
+                'remaining_amount': remaining_amount,
+            })
 
             if assigned_amount > 0:
                 consumer.consume(request, ggo, assigned_amount)
