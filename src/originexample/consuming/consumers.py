@@ -92,8 +92,6 @@ class GgoConsumerController(object):
         consumers = self.get_consumers(user, ggo, session)
         remaining_amount = ggo.amount
 
-        print('remaining_amount: %s' % remaining_amount)
-
         for consumer in takewhile(lambda _: remaining_amount > 0, consumers):
             already_transferred = ggo.amount - remaining_amount
 
@@ -102,20 +100,6 @@ class GgoConsumerController(object):
 
             assigned_amount = min(remaining_amount, desired_amount)
             remaining_amount -= assigned_amount
-
-            print('-' * 79)
-            print('already_transferred: %s' % already_transferred)
-            print('desired_amount: %s' % desired_amount)
-            print('assigned_amount: %s' % assigned_amount)
-            print('remaining_amount: %s' % remaining_amount)
-
-            # logger.info('GGO Consumer details', extra={
-            #     'remaining_amount': remaining_amount,
-            #     'already_transferred': already_transferred,
-            #     'desired_amount': desired_amount,
-            #     'assigned_amount': assigned_amount,
-            #     'remaining_amount': remaining_amount,
-            # })
 
             if assigned_amount > 0:
                 consumer.consume(request, ggo, assigned_amount)
@@ -273,23 +257,13 @@ class AgreementConsumer(GgoConsumer):
 
         if self.agreement.amount_percent:
             # Transfer percentage of ggo.amount
-            print('case 1')
             percentage_amount = self.agreement.amount_percent / 100 * ggo.amount
-            print('percentage_amount: %s' % percentage_amount)
             desired_amount = min(self.agreement.calculated_amount,
                                  floor(percentage_amount))
-            print('desired_amount (1): %s' % desired_amount)
             desired_amount = desired_amount - transferred_amount
-            print('desired_amount (2): %s' % desired_amount)
         else:
             # Transfer all of ggo.amount
             desired_amount = self.agreement.calculated_amount - transferred_amount
-            print('case 2')
-            print('desired_amount: %s' % desired_amount)
-
-        print('X desired_amount: %s' % desired_amount)
-        print('X ggo.amount: %s' % ggo.amount)
-        print('X max(0, min(ggo.amount, desired_amount)): %s' % max(0, min(ggo.amount, desired_amount)))
 
         return max(0, min(ggo.amount, desired_amount))
 
